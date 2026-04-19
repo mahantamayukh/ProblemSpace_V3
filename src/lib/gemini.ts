@@ -12,59 +12,10 @@ function getAI(apiKey?: string) {
   return ai;
 }
 
-// ─── GEMINI REST (OAuth) ───────────────────────────────────────────────────
+// ─── LEGACY REST (OAuth via User) REMOVED ───────────
+// Google AI Studio strictly enforces API keys. The OAuth pathway has been deprecated in ProblemSpace
+// to ensure perfect compatibility with BYOK routing.
 
-async function callGeminiREST(
-  model: string,
-  contents: any[],
-  config: { systemInstruction?: string; tools?: any[]; temperature?: number },
-  oauthToken: string
-) {
-  const body: any = {
-    contents,
-    generationConfig: { temperature: config.temperature ?? 0.7 },
-  };
-
-  if (config.systemInstruction) {
-    body.systemInstruction = { parts: [{ text: config.systemInstruction }] };
-  }
-
-  if (config.tools) {
-    // Filter out googleSearch (not supported via user OAuth REST calls)
-    const filtered = config.tools.filter((t: any) => !t.googleSearch);
-    if (filtered.length > 0) body.tools = filtered;
-  }
-
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${oauthToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(`Gemini OAuth Error: ${err?.error?.message || res.statusText}`);
-  }
-
-  const data = await res.json();
-  const parts: any[] = data.candidates?.[0]?.content?.parts || [];
-  const text = parts.filter((p: any) => p.text).map((p: any) => p.text).join('') || null;
-  const functionCalls = parts
-    .filter((p: any) => p.functionCall)
-    .map((p: any) => ({ name: p.functionCall.name, args: p.functionCall.args }));
-
-  return {
-    text,
-    functionCalls: functionCalls.length > 0 ? functionCalls : null,
-    candidates: data.candidates,
-  };
-}
 
 // ─── UNIFIED GEMINI CALLER ────────────────────────────────────────────────
 
@@ -73,11 +24,8 @@ async function callGemini(
   contents: any[],
   config: { systemInstruction?: string; tools?: any[]; temperature?: number },
   apiKey?: string,
-  oauthToken?: string
+  _oauthToken?: string // Ignored, kept for signature compatibility
 ) {
-  if (oauthToken) {
-    return callGeminiREST(model, contents, config, oauthToken);
-  }
   const client = getAI(apiKey);
   const response = await client.models.generateContent({
     model,
@@ -124,25 +72,25 @@ async function callClaudeAPI(
   const claudeTools = tools
     .filter(t => t.functionDeclarations)
     .flatMap(t => t.functionDeclarations.map((fd: any) => ({
-    name: fd.name,
-    description: fd.description,
-    input_schema: {
-      type: "object",
-      properties: Object.keys(fd.parameters.properties).reduce((acc: any, key) => {
-        const prop = fd.parameters.properties[key];
-        acc[key] = {
-          type: prop.type === Type.ARRAY ? 'array' :
-            (prop.type === Type.OBJECT ? 'object' :
-              (prop.type === Type.NUMBER ? 'number' :
-                (prop.type === Type.BOOLEAN ? 'boolean' : 'string'))),
-          description: prop.description,
-          items: prop.items ? (prop.items.type === Type.OBJECT ? { type: 'object', properties: prop.items.properties, required: prop.items.required } : { type: 'string' }) : undefined
-        };
-        return acc;
-      }, {}),
-      required: fd.parameters.required
-    }
-  })));
+      name: fd.name,
+      description: fd.description,
+      input_schema: {
+        type: "object",
+        properties: Object.keys(fd.parameters.properties).reduce((acc: any, key) => {
+          const prop = fd.parameters.properties[key];
+          acc[key] = {
+            type: prop.type === Type.ARRAY ? 'array' :
+              (prop.type === Type.OBJECT ? 'object' :
+                (prop.type === Type.NUMBER ? 'number' :
+                  (prop.type === Type.BOOLEAN ? 'boolean' : 'string'))),
+            description: prop.description,
+            items: prop.items ? (prop.items.type === Type.OBJECT ? { type: 'object', properties: prop.items.properties, required: prop.items.required } : { type: 'string' }) : undefined
+          };
+          return acc;
+        }, {}),
+        required: fd.parameters.required
+      }
+    })));
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -963,60 +911,52 @@ export async function generateSessionSummary(
   }
 }
 
-export const updateConnectedNodesDeclaration: FunctionDeclaration = {
-  name: "updateConnectedNodes",
-  description: "Updates both the source and target node when they are connected.",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      sourceUpdate: { type: Type.OBJECT, properties: { label: { type: Type.STRING }, details: { type: Type.STRING } }, required: ["label", "details"] },
-      targetUpdate: { type: Type.OBJECT, properties: { label: { type: Type.STRING }, details: { type: Type.STRING } }, required: ["label", "details"] }
-    },
-    required: ["sourceUpdate", "targetUpdate"]
-  }
-};
-
-export async function autoRefineConnectedNodes(
-  sourceNode: any,
+export async function synthesizeTargetNode(
+  sourceNodes: any[],
   targetNode: any,
-  onNodesUpdate: (sourceData: any, targetData: any) => void,
+  onNodeUpdate: (targetData: any) => void,
   apiKey?: string,
   modelName: string = "gemini-2.0-flash",
   anthropicApiKey?: string,
-  oauthToken?: string,
+  oauthToken?: string, // kept for signature compatibility
   customBaseUrl?: string,
   customModelName?: string
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
-  const instruction = `Find logical bridge between linked nodes.\nS:[${sourceNode.type}] ${sourceNode.data.label}\nT:[${targetNode.type}] ${targetNode.data.label}\nUse updateConnectedNodes.`;
-  const tools = [{ functionDeclarations: [updateConnectedNodesDeclaration] }];
-  const contents = [{ role: 'user', parts: [{ text: "Refine connection." }] }];
+
+  if (sourceNodes.length === 0) return;
+
+  const sourcesText = sourceNodes.map(n => `[${n.type}] ${n.data.label}: ${n.data.details || ''}`).join('\n\n');
+  const instruction = `You are a design synthesizer. Multiple source concepts are pointing into the target node. Analyze all incoming sources and rewrite the target node's content to perfectly synthesize their intersection.\n\nIncoming Sources:\n${sourcesText}\n\nCurrent Target Node:\n[${targetNode.type}] ${targetNode.data.label}\n\nUse the updateNode tool to completely rewrite the Target Node based on the synthesis of the sources.`;
+
+  const tools = [{ functionDeclarations: [updateNodeDeclaration] }];
+  const contents = [{ role: 'user', parts: [{ text: "Synthesize the connected nodes into the target node." }] }];
 
   if (isClaude) {
     const response = await callClaudeAPI(modelName, contents, instruction, tools, anthropicApiKey);
     if (response.functionCalls) {
       for (const call of response.functionCalls) {
-        if (call.name === "updateConnectedNodes") onNodesUpdate(call.args.sourceUpdate, call.args.targetUpdate);
+        if (call.name === "updateNode") onNodeUpdate(call.args);
       }
     }
+    return response.text;
   } else if (isUniversal) {
-    try {
-      const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, apiKey, customBaseUrl);
-      if (response.functionCalls) {
-        for (const call of response.functionCalls) {
-          if (call.name === "updateConnectedNodes") onNodesUpdate(call.args.sourceUpdate, call.args.targetUpdate);
-        }
+    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, apiKey, customBaseUrl);
+    if (response.functionCalls) {
+      for (const call of response.functionCalls) {
+        if (call.name === "updateNode") onNodeUpdate(call.args);
       }
-    } catch (e) { console.error(e); }
+    }
+    return response.text || "Synthesized target node.";
   } else {
-    try {
-      const response = await callGemini(modelName, contents, { systemInstruction: instruction, tools, temperature: 0.7 }, apiKey, oauthToken);
-      if (response.functionCalls) {
-        for (const call of response.functionCalls) {
-          if (call.name === "updateConnectedNodes") onNodesUpdate(call.args.sourceUpdate, call.args.targetUpdate);
-        }
+    const response = await callGemini(modelName, contents, { systemInstruction: instruction, tools, temperature: 0.6 }, apiKey, oauthToken);
+    if (response.functionCalls) {
+      for (const call of response.functionCalls) {
+        if (call.name === "updateNode") onNodeUpdate(call.args);
       }
-    } catch (e) { console.error(e); }
+    }
+    return response.text || "Synthesized target node.";
   }
 }
+

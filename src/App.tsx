@@ -4,7 +4,7 @@ import {
   Footprints, MessageCircle, LayoutGrid, Zap, Swords, PenTool, ArrowRight, Workflow, Layers, FolderCode, FlaskConical, ChevronLeft, ChevronRight, Share2
 } from 'lucide-react';
 import Markdown from 'react-markdown';
-import { generateNextResponse, generateNodeRefinementResponse, getInitialMessage, flipFailureNodes, scanSignal, synthesizeInterviewsToNode, generateSessionSummary, autoRefineConnectedNodes } from './lib/gemini';
+import { generateNextResponse, generateNodeRefinementResponse, getInitialMessage, flipFailureNodes, scanSignal, synthesizeInterviewsToNode, generateSessionSummary, synthesizeTargetNode } from './lib/gemini';
 import Board from './components/Board';
 import LandingPage from './components/LandingPage';
 import FrameworkSelector from './components/FrameworkSelector';
@@ -433,7 +433,7 @@ export default function App() {
     // Seed history with session summary so the AI retains context, instead of losing everything
     setHistory(sessionSummary
       ? [{ role: 'user', parts: [{ text: `[Context from previous discussion]: ${sessionSummary}` }] },
-         { role: 'model', parts: [{ text: 'Understood. I have the context from our previous discussion. Let\'s continue.' }] }]
+      { role: 'model', parts: [{ text: 'Understood. I have the context from our previous discussion. Let\'s continue.' }] }]
       : []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sprint.currentPhase, sprint.activeExercise, sprint.activeThinkingMode]);
@@ -455,10 +455,10 @@ export default function App() {
         setIsSummarizing(true);
         try {
           const draft = await generateSessionSummary(
-            history, 
-            sessionSummary, 
-            userApiKey, 
-            aiModel, 
+            history,
+            sessionSummary,
+            userApiKey,
+            aiModel,
             anthropicApiKey,
             undefined, // oauthToken
             aiModel === 'universal' ? customBaseUrl : undefined,
@@ -662,25 +662,28 @@ export default function App() {
   };
 
   const handleEdgeConnect = async (params: any) => {
-    const sourceNode = boardNodesSnapshot.find(n => n.id === params.source);
     const targetNode = boardNodesSnapshot.find(n => n.id === params.target);
+    if (!targetNode) return;
 
-    if (!sourceNode || !targetNode) return;
+    // Find all edges pointing to this target node (including the one being created)
+    const currentEdges = [...boardEdgesSnapshot, { source: params.source, target: params.target }];
+    const incomingEdges = currentEdges.filter(e => e.target === params.target);
 
-    // Show a subtle toast or indicator if needed, but for now we'll just do it in the background
+    // Extract the source nodes for all these edges
+    const sourceNodes = incomingEdges
+      .map(edge => boardNodesSnapshot.find(n => n.id === edge.source))
+      .filter((n): n is any => !!n);
+
+    if (sourceNodes.length === 0) return;
+
     try {
-      await autoRefineConnectedNodes(
-        sourceNode,
+      await synthesizeTargetNode(
+        sourceNodes,
         targetNode,
-        (sourceUpdate, targetUpdate) => {
-          setUpdatedNodes([
-            { id: params.source, data: sourceUpdate },
-            { id: params.target, data: targetUpdate }
-          ]);
-          
-          if (selectedNode?.id === params.source) {
-            setSelectedNode((prev: any) => ({ ...prev, data: { ...prev.data, ...sourceUpdate } }));
-          } else if (selectedNode?.id === params.target) {
+        (targetUpdate) => {
+          setUpdatedNodes([{ id: params.target, data: targetUpdate }]);
+
+          if (selectedNode?.id === params.target) {
             setSelectedNode((prev: any) => ({ ...prev, data: { ...prev.data, ...targetUpdate } }));
           }
         },
@@ -692,7 +695,7 @@ export default function App() {
         aiModel === 'universal' ? customModelName : undefined
       );
     } catch (err) {
-      console.error("Auto Refine failed:", err);
+      console.error("Node Synthesis failed:", err);
     }
   };
 
@@ -711,7 +714,7 @@ export default function App() {
       const connectedEdgeIds = boardEdgesSnapshot
         .filter(e => e.source === nodeId || e.target === nodeId)
         .map(e => e.source === nodeId ? e.target : e.source);
-      
+
       const connectedNodesData = boardNodesSnapshot
         .filter(n => connectedEdgeIds.includes(n.id))
         .map(n => ({ type: n.type, data: n.data }));
@@ -814,8 +817,8 @@ export default function App() {
           <div className="flex flex-col h-full w-[100%] overflow-hidden">
             <div className="p-3 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-cream)] transition-colors shrink-0">
               {/* Logo / Home */}
-              <div 
-                className="flex items-center cursor-pointer group select-none ml-1 mr-2" 
+              <div
+                className="flex items-center cursor-pointer group select-none ml-1 mr-2"
                 onClick={() => setHasStarted(false)}
                 title="Return to Home"
               >
@@ -846,20 +849,20 @@ export default function App() {
                 >
                   <Link className="w-4 h-4" />
                 </button>
-                <button 
-                  onClick={() => setIsDarkMode(!isDarkMode)} 
+                <button
+                  onClick={() => setIsDarkMode(!isDarkMode)}
                   title="Toggle Light/Dark Mode"
                   className="w-8 h-8 rounded-lg hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)] flex items-center justify-center transition-all"
                 >
                   {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
-                
+
                 <div className="mx-1.5 w-px h-5 bg-[var(--color-border)]" />
-                
+
                 <UserProfileDropdown onOpenSettings={() => setIsSettingsOpen(true)} />
-                
-                <button 
-                  onClick={() => setIsLeftCollapsed(true)} 
+
+                <button
+                  onClick={() => setIsLeftCollapsed(true)}
                   title="Collapse Panel"
                   className="w-8 h-8 ml-1 rounded-lg hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)] flex items-center justify-center transition-all"
                 >
