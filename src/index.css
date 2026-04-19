@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* ── Soft/Premium Design Tokens ──────────────────────────────────────────── */
+:root {
+  /* Creamy off-white base */
+  --color-cream: #FAF9F6;
+  --color-cream-warm: #F5F0EB;
+  --color-cream-deep: #EDE8E1;
+
+  /* Warm text colors */
+  --color-ink: #2D2A26;
+  --color-ink-light: #6B6560;
+  --color-ink-muted: #9C9690;
+
+  /* Soft border colors */
+  --color-border: #E8E4DE;
+  --color-border-hover: #D4CFC8;
+
+  /* Pastel accents */
+  --color-lavender: #C4B5E0;
+  --color-lavender-light: #EDE7F8;
+  --color-sage: #B5CFBA;
+  --color-sage-light: #E4F0E6;
+  --color-peach: #F0C4A8;
+  --color-peach-light: #FBE9DA;
+  --color-rose: #E0A8B8;
+  --color-rose-light: #F8E0E8;
+  --color-sky: #A8C8E0;
+  --color-sky-light: #DCEAF5;
+  --color-amber: #E0CFA0;
+  --color-amber-light: #F5EDD4;
+
+  /* Shadows */
+  --shadow-soft: 0 1px 3px rgba(45, 42, 38, 0.04), 0 1px 2px rgba(45, 42, 38, 0.06);
+  --shadow-medium: 0 4px 6px -1px rgba(45, 42, 38, 0.05), 0 2px 4px -2px rgba(45, 42, 38, 0.05);
+  --shadow-elevated: 0 10px 25px -5px rgba(45, 42, 38, 0.08), 0 8px 10px -6px rgba(45, 42, 38, 0.04);
+  --shadow-modal: 0 25px 50px -12px rgba(45, 42, 38, 0.15);
+}
+
+/* Dark mode tokens */
+.dark {
+  --color-cream: #1A1917;
+  --color-cream-warm: #211F1D;
+  --color-cream-deep: #2A2825;
+
+  --color-ink: #E8E4DE;
+  --color-ink-light: #9C9690;
+  --color-ink-muted: #6B6560;
+
+  --color-border: #3A3733;
+  --color-border-hover: #4A4742;
+
+  --color-lavender: #9B87C9;
+  --color-lavender-light: #2A2340;
+  --color-sage: #7DAD85;
+  --color-sage-light: #1E2E21;
+  --color-peach: #D4A080;
+  --color-peach-light: #2E2218;
+  --color-rose: #C87D93;
+  --color-rose-light: #2E1A22;
+  --color-sky: #7DACC8;
+  --color-sky-light: #1A2530;
+  --color-amber: #C8B878;
+  --color-amber-light: #2A2618;
+
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.25), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+  --shadow-elevated: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-hover);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-ink-muted);
+}
+
+/* ── React Flow Overrides ────────────────────────────────────────────── */
+.react-flow__controls-button {
+  background-color: var(--color-cream) !important;
+  border-color: var(--color-border) !important;
+  border-radius: 8px !important;
+  fill: var(--color-ink) !important;
+  transition: all 0.2s ease !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--color-cream-warm) !important;
+  box-shadow: var(--shadow-soft) !important;
+}
+
+.dark .react-flow__controls-button {
+  background-color: var(--color-cream) !important;
+  border-color: var(--color-border) !important;
+  fill: var(--color-ink) !important;
+}
+
+.dark .react-flow__controls-button:hover {
+  background-color: var(--color-cream-warm) !important;
+}
+
+/* ── Premium Utilities ──────────────────────────────────────────────── */
+.glass {
+  background: rgba(250, 249, 246, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass {
+  background: rgba(26, 25, 23, 0.8);
+}
+
+/* ── Custom shimmer animation ────────────────────────────────────────── */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
