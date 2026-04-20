@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { Handle, Position, NodeToolbar } from '@xyflow/react';
 import { Palette, Trash2, Copy, MessageSquare, Brain, Activity, Heart } from 'lucide-react';
 
-const AutoResizeTextarea = ({ defaultValue, onBlur, className, placeholder, rows = 1 }: any) => {
+const AutoResizeTextarea = ({ value, onBlur, className, placeholder, rows = 1, onChange }: any) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useLayoutEffect(() => {
@@ -10,19 +10,21 @@ const AutoResizeTextarea = ({ defaultValue, onBlur, className, placeholder, rows
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
-  }, [defaultValue]);
+  }, [value]);
 
   const handleInput = (e: any) => {
     e.target.style.height = 'auto';
     e.target.style.height = e.target.scrollHeight + 'px';
+    if (onChange) onChange(e);
   };
 
   return (
     <textarea
       ref={textareaRef}
-      defaultValue={defaultValue}
+      value={value}
       onBlur={onBlur}
       onInput={handleInput}
+      onChange={onChange || (() => {})}
       className={className}
       placeholder={placeholder}
       rows={rows}
@@ -103,8 +105,8 @@ export function EmpathyNoteNode({ id, data, type, selected }: any) {
 
         <div className="font-semibold text-xs leading-tight mb-1 text-[var(--color-ink)] z-10 flex-1 nodrag">
           <AutoResizeTextarea
-            defaultValue={data.label}
-            onBlur={(e: any) => window.dispatchEvent(new CustomEvent('node-data-update', { detail: { id, data: { ...data, label: e.target.value } } }))}
+            value={data.label}
+            onChange={(e: any) => window.dispatchEvent(new CustomEvent('node-data-update', { detail: { id, data: { ...data, label: e.target.value } } }))}
             className="w-full h-full bg-transparent outline-none resize-none overflow-hidden placeholder:text-[var(--color-ink-muted)] font-semibold"
             placeholder="Text..."
           />
@@ -112,8 +114,8 @@ export function EmpathyNoteNode({ id, data, type, selected }: any) {
 
         <div className="text-[10px] text-[var(--color-ink-light)] z-10 nodrag mt-auto">
           <AutoResizeTextarea
-            defaultValue={data.details}
-            onBlur={(e: any) => window.dispatchEvent(new CustomEvent('node-data-update', { detail: { id, data: { ...data, details: e.target.value } } }))}
+            value={data.details}
+            onChange={(e: any) => window.dispatchEvent(new CustomEvent('node-data-update', { detail: { id, data: { ...data, details: e.target.value } } }))}
             className="w-full bg-transparent outline-none resize-none overflow-hidden placeholder:text-[var(--color-ink-muted)]"
             placeholder="Details..."
           />

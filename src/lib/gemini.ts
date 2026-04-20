@@ -4,7 +4,8 @@ let ai: GoogleGenAI | null = null;
 let currentKey: string | null = null;
 
 function getAI(apiKey?: string) {
-  const keyToUse = apiKey || (typeof window !== 'undefined' ? localStorage.getItem('problemspace-user-api-key') : null) || process.env.GEMINI_API_KEY || "missing-key";
+  const rawKey = apiKey || (typeof window !== 'undefined' ? localStorage.getItem('problemspace-user-api-key') : null) || process.env.GEMINI_API_KEY || "missing-key";
+  const keyToUse = rawKey.trim();
   if (!ai || currentKey !== keyToUse) {
     ai = new GoogleGenAI({ apiKey: keyToUse });
     currentKey = keyToUse;
@@ -27,8 +28,10 @@ async function callGemini(
   _oauthToken?: string // Ignored, kept for signature compatibility
 ) {
   const client = getAI(apiKey);
+  const normalizedModel = model.startsWith('models/') ? model : `models/${model}`;
+  
   const response = await client.models.generateContent({
-    model,
+    model: normalizedModel,
     contents,
     config: {
       systemInstruction: config.systemInstruction,

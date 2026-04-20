@@ -6,7 +6,7 @@ import { GroupNode } from './GroupNode';
 import { EmpathyMapNode } from './EmpathyMapNode';
 import { EmpathyNoteNode } from './EmpathyNoteNode';
 
-const AutoResizeTextarea = ({ defaultValue, onBlur, className, placeholder, rows = 1, readOnly = false }: any) => {
+const AutoResizeTextarea = ({ value, onBlur, className, placeholder, rows = 1, readOnly = false, onChange }: any) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useLayoutEffect(() => {
@@ -14,19 +14,21 @@ const AutoResizeTextarea = ({ defaultValue, onBlur, className, placeholder, rows
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
-  }, [defaultValue]);
+  }, [value]);
 
   const handleInput = (e: any) => {
     e.target.style.height = 'auto';
     e.target.style.height = e.target.scrollHeight + 'px';
+    if (onChange) onChange(e);
   };
 
   return (
     <textarea
       ref={textareaRef}
-      defaultValue={defaultValue}
+      value={value}
       onBlur={onBlur}
       onInput={handleInput}
+      onChange={onChange || (() => {})}
       readOnly={readOnly}
       className={`${className} ${readOnly ? 'cursor-default' : ''}`}
       placeholder={placeholder}
@@ -167,8 +169,8 @@ export function DetectiveNode({ id, data, type, selected }: any) {
 
         <div className="font-semibold text-sm mb-1 text-[var(--color-ink)] nodrag">
           <AutoResizeTextarea
-            defaultValue={data.label}
-            onBlur={(e: any) => window.dispatchEvent(new CustomEvent('node-data-update', { detail: { id, data: { ...data, label: e.target.value } } }))}
+            value={data.label}
+            onChange={(e: any) => window.dispatchEvent(new CustomEvent('node-data-update', { detail: { id, data: { ...data, label: e.target.value } } }))}
             className="w-full bg-transparent outline-none resize-none overflow-hidden placeholder:text-[var(--color-ink-muted)]"
             placeholder="Unnamed Node..."
           />
@@ -176,8 +178,8 @@ export function DetectiveNode({ id, data, type, selected }: any) {
 
         <div className="text-xs text-[var(--color-ink-light)] leading-relaxed nodrag">
           <AutoResizeTextarea
-            defaultValue={data.details}
-            onBlur={(e: any) => window.dispatchEvent(new CustomEvent('node-data-update', { detail: { id, data: { ...data, details: e.target.value } } }))}
+            value={data.details}
+            onChange={(e: any) => window.dispatchEvent(new CustomEvent('node-data-update', { detail: { id, data: { ...data, details: e.target.value } } }))}
             className="w-full bg-transparent outline-none resize-none overflow-hidden placeholder:text-[var(--color-ink-muted)]"
             placeholder="Details..."
           />
@@ -229,7 +231,7 @@ export function MemoryNode({ data }: any) {
 
       <div className="font-semibold text-sm mb-1 text-white tracking-tight">
         <AutoResizeTextarea
-          defaultValue={data.label}
+          value={data.label}
           readOnly={true}
           className="w-full bg-transparent outline-none resize-none overflow-hidden text-fuchsia-50"
         />
@@ -237,7 +239,7 @@ export function MemoryNode({ data }: any) {
 
       <div className="text-[11px] text-fuchsia-200/70 font-medium leading-relaxed">
         <AutoResizeTextarea
-          defaultValue={data.details}
+          value={data.details}
           readOnly={true}
           className="w-full bg-transparent outline-none resize-none overflow-hidden"
         />

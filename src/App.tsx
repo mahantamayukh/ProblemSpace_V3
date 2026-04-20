@@ -98,7 +98,15 @@ export default function App() {
   const [showSignalScanner, setShowSignalScanner] = useState(false);
   const [simulatingPersona, setSimulatingPersona] = useState<any>(null);
   const [simulationSetupPersona, setSimulationSetupPersona] = useState<any>(null);
-  const [savedInterviews, setSavedInterviews] = useState<SavedInterview[]>([]);
+  const [savedInterviews, setSavedInterviews] = useState<SavedInterview[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('problemspace-interviews-v1');
+        if (saved) return JSON.parse(saved);
+      } catch (e) { }
+    }
+    return [];
+  });
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [showThinkingModes, setShowThinkingModes] = useState(false);
   const [showFrameworkSelector, setShowFrameworkSelector] = useState(false);
@@ -116,21 +124,36 @@ export default function App() {
   const [isNeuralViewOpen, setIsNeuralViewOpen] = useState(false);
   const [customBaseUrl, setCustomBaseUrl] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-base-url') || 'https://api.openai.com/v1' : 'https://api.openai.com/v1'));
   const [customModelName, setCustomModelName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-model-name') || 'gpt-4o' : 'gpt-4o'));
+  
+  // Local state for manual node editing (to prevent focus loss and lag)
+  const [localLabel, setLocalLabel] = useState('');
+  const [localDetails, setLocalDetails] = useState('');
+  const [isNodeEditDirty, setIsNodeEditDirty] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('problemspace-constraints-v1', JSON.stringify(constraints));
-      localStorage.setItem('problemspace-user-api-key', userApiKey);
-      localStorage.setItem('problemspace-anthropic-api-key', anthropicApiKey);
-      localStorage.setItem('problemspace-session-summary-v1', sessionSummary);
-      localStorage.setItem('problemspace-summary-freq', summaryFrequency.toString());
-      localStorage.setItem('problemspace-ai-model', aiModel);
-      localStorage.setItem('problemspace-custom-base-url', customBaseUrl);
-      localStorage.setItem('problemspace-custom-model-name', customModelName);
-      localStorage.setItem('problemspace-chat-messages', JSON.stringify(messages));
-      localStorage.setItem('problemspace-chat-history', JSON.stringify(history.slice(-20)));
-    }
-  }, [constraints, userApiKey, anthropicApiKey, sessionSummary, summaryFrequency, aiModel, customBaseUrl, customModelName, messages, history]);
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('problemspace-constraints-v1', JSON.stringify(constraints));
+          localStorage.setItem('problemspace-user-api-key', userApiKey);
+          localStorage.setItem('problemspace-anthropic-api-key', anthropicApiKey);
+          localStorage.setItem('problemspace-session-summary-v1', sessionSummary);
+          localStorage.setItem('problemspace-summary-freq', summaryFrequency.toString());
+          localStorage.setItem('problemspace-ai-model', aiModel);
+          localStorage.setItem('problemspace-custom-base-url', customBaseUrl);
+          localStorage.setItem('problemspace-custom-model-name', customModelName);
+          localStorage.setItem('problemspace-chat-messages', JSON.stringify(messages));
+          localStorage.setItem('problemspace-chat-history', JSON.stringify(history.slice(-20)));
+          localStorage.setItem('problemspace-interviews-v1', JSON.stringify(savedInterviews));
+        } catch (e: any) {
+          if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+            console.error("LocalStorage full! Progress may not be saved.");
+          }
+        }
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [constraints, userApiKey, anthropicApiKey, sessionSummary, summaryFrequency, aiModel, customBaseUrl, customModelName, messages, history, savedInterviews]);
 
   // Auto-open Settings after login if required API key is missing for current provider
   useEffect(() => {
@@ -189,9 +212,12 @@ export default function App() {
 
   // Continually save boards to local storage on change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('problemspace-project-boards-v4', JSON.stringify(projectBoards));
-    }
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('problemspace-project-boards-v4', JSON.stringify(projectBoards));
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
   }, [projectBoards]);
 
   // Synchronize snapshots back to active board state on a slight denounce (so we don't block too hard)
@@ -242,6 +268,11 @@ export default function App() {
   };
 
   const handleMemoryUpdate = (data: any) => {
+    // If we are currently looking at the Neural Memory, route updates through newItems to trigger auto-layout
+    if (activeBoardId === 'ai-memory') {
+      setBoardItems(data);
+    }
+
     setProjectBoards(boards => boards.map(b => {
       if (b.id === 'ai-memory') {
         const newNodes = [...b.nodes];
@@ -253,7 +284,7 @@ export default function App() {
             const flowNode = {
               id: newNode.id,
               type: 'memory', // Force neural memory visual style
-              position: { x: Math.random() * 400, y: Math.random() * 400 },
+              position: newNode.position || (idx > -1 ? newNodes[idx].position : { x: 0, y: 0 }),
               data: {
                 label: newNode.label,
                 details: newNode.details,
@@ -364,6 +395,8 @@ export default function App() {
   // Node Focus State
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [updatedNodes, setUpdatedNodes] = useState<any[]>([]);
+  const clearUpdatedNodes = useCallback(() => setUpdatedNodes([]), []);
+  
   const [deletedNodeId, setDeletedNodeId] = useState<string | undefined>(undefined);
   const [nodeMessages, setNodeMessages] = useState<Record<string, Message[]>>({});
   const [nodeHistory, setNodeHistory] = useState<Record<string, any[]>>({});
@@ -372,7 +405,21 @@ export default function App() {
   // Edge Focus State
   const [selectedEdge, setSelectedEdge] = useState<any>(null);
   const [updatedEdge, setUpdatedEdge] = useState<any>(null);
+  const clearUpdatedEdge = useCallback(() => setUpdatedEdge(null), []);
   const [deletedEdgeId, setDeletedEdgeId] = useState<string | undefined>(undefined);
+
+  // Synchronize Refinement Panel (Sidebar) with Board updates (e.g. from AI)
+  useEffect(() => {
+    if (selectedNode) {
+      // Find the actual current state of this node on the board
+      const currentNode = boardNodesSnapshot.find(n => n.id === selectedNode.id);
+      if (currentNode && !isNodeEditDirty) {
+        // If the board data changed (e.g. via AI) and we haven't started typing manually, sync it
+        if (currentNode.data.label !== localLabel) setLocalLabel(currentNode.data.label || '');
+        if (currentNode.data.details !== localDetails) setLocalDetails(currentNode.data.details || '');
+      }
+    }
+  }, [boardNodesSnapshot, selectedNode, isNodeEditDirty, localLabel, localDetails]);
 
   const [showSummary, setShowSummary] = useState(false);
 
@@ -455,7 +502,7 @@ export default function App() {
         setIsSummarizing(true);
         try {
           const draft = await generateSessionSummary(
-            history,
+            effectiveHistory,
             sessionSummary,
             userApiKey,
             aiModel,
@@ -466,10 +513,10 @@ export default function App() {
           );
           setPendingSummary(draft);
           setShowSummaryEditModal(true);
-          // We pause the regular message generation until the user saves the summary
-          // This ensures the NEXT AI response uses the updated CONSOLIDATED MEMORY
-          setIsLoading(false);
-          return;
+          // Optimization: We don't return here anymore. We let the generateNextResponse call proceed 
+          // but we use the DRAFT session summary as part of the context for the current response.
+          // This keeps the chat flowing while the user edits the summary in parallel.
+          // Note: setIsLoading remains true.
         } catch (e) {
           console.error("Summarization failed:", e);
         } finally {
@@ -644,7 +691,15 @@ export default function App() {
     }
     setSelectedEdge(null);
     setSelectedNode(node);
-    if (!nodeMessages[node.id]) {
+    
+    // Initialize local edit state
+    if (node) {
+      setLocalLabel(node.data.label || '');
+      setLocalDetails(node.data.details || '');
+      setIsNodeEditDirty(false);
+    }
+
+    if (node && !nodeMessages[node.id]) {
       setNodeMessages(prev => ({
         ...prev,
         [node.id]: [{
@@ -759,6 +814,20 @@ export default function App() {
     } finally {
       setIsNodeLoading(false);
     }
+  };
+
+  const handleSaveNodeUpdate = () => {
+    if (!selectedNode) return;
+    
+    const nodeId = selectedNode.id;
+    const updateData = { label: localLabel, details: localDetails };
+    
+    // Update local state for immediate feedback in the panel
+    setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, ...updateData } });
+    
+    // Dispatch update to board
+    setUpdatedNodes([{ id: nodeId, data: updateData }]);
+    setIsNodeEditDirty(false);
   };
 
   // Not wrapped in useCallback — handleSend captures current state each render,
@@ -1110,7 +1179,9 @@ export default function App() {
           newItems={boardItems}
           restoreState={restoreState}
           updatedNodes={updatedNodes}
+          clearUpdatedNodes={clearUpdatedNodes}
           updatedEdge={updatedEdge}
+          clearUpdatedEdge={clearUpdatedEdge}
           deletedNodeId={deletedNodeId}
           deletedEdgeId={deletedEdgeId}
           onNodeClick={handleNodeClick}
@@ -1214,26 +1285,43 @@ export default function App() {
                     <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-cream-warm)] transition-colors">
                       <div className="p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-cream)] shadow-sm transition-all flex flex-col gap-2">
                         <input
-                          value={selectedNode.data.label || ''}
+                          value={localLabel}
                           onChange={(e) => {
-                            const newLabel = e.target.value;
-                            setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, label: newLabel } });
-                            setUpdatedNodes([{ id: selectedNode.id, data: { label: newLabel } }]);
+                            setLocalLabel(e.target.value);
+                            setIsNodeEditDirty(true);
                           }}
                           className="font-bold text-sm bg-transparent border-b border-transparent hover:border-neutral-200 focus:border-blue-500 focus:outline-none dark:text-white transition-colors w-full"
                           placeholder="Node Label"
                         />
                         <textarea
-                          value={selectedNode.data.details || ''}
+                          value={localDetails}
                           onChange={(e) => {
-                            const newDetails = e.target.value;
-                            setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, details: newDetails } });
-                            setUpdatedNodes([{ id: selectedNode.id, data: { details: newDetails } }]);
+                            setLocalDetails(e.target.value);
+                            setIsNodeEditDirty(true);
                           }}
                           className="text-xs text-neutral-600 dark:text-neutral-400 bg-transparent border border-transparent hover:border-neutral-200 focus:border-blue-500 focus:outline-none resize-none min-h-[60px] transition-colors w-full p-1"
                           placeholder="Node Details"
                         />
                       </div>
+
+                      {/* Manual Update Button */}
+                      <AnimatePresence>
+                        {isNodeEditDirty && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="mt-3 overflow-hidden"
+                          >
+                            <button
+                              onClick={handleSaveNodeUpdate}
+                              className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-lg  hover:-translate-y-0.5 transition-all"
+                            >
+                              Update Card Content
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
                       <div className="mt-6 space-y-3">
                         <label className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 block">Appearance & Mood</label>

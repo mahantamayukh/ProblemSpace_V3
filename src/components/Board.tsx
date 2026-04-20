@@ -60,7 +60,39 @@ const getLayoutedElements = (nodes: any[], edges: any[], direction = 'TB') => {
   return { nodes: newNodes, edges };
 };
 
-function BoardInner({ newItems, restoreState, updatedNodes, updatedEdge, deletedNodeId, deletedEdgeId, onNodeClick, onEdgeClick, onEdgeConnect, isDarkMode, onSnapshot, onShowSummary, isNeuralView }: { newItems: any, restoreState?: { nodes: any[], edges: any[] }, updatedNodes?: any[], updatedEdge?: any, deletedNodeId?: string, deletedEdgeId?: string, onNodeClick?: (node: any) => void, onEdgeClick?: (edge: any) => void, onEdgeConnect?: (connection: any) => void, isDarkMode?: boolean, onSnapshot?: (nodes: any[], edges: any[]) => void, onShowSummary?: () => void, isNeuralView?: boolean }) {
+function BoardInner({ 
+  newItems, 
+  restoreState, 
+  updatedNodes, 
+  clearUpdatedNodes,
+  updatedEdge, 
+  clearUpdatedEdge,
+  deletedNodeId, 
+  deletedEdgeId, 
+  onNodeClick, 
+  onEdgeClick, 
+  onEdgeConnect, 
+  isDarkMode, 
+  onSnapshot, 
+  onShowSummary, 
+  isNeuralView 
+}: { 
+  newItems: any, 
+  restoreState?: { nodes: any[], edges: any[] }, 
+  updatedNodes?: any[], 
+  clearUpdatedNodes?: () => void,
+  updatedEdge?: any, 
+  clearUpdatedEdge?: () => void,
+  deletedNodeId?: string, 
+  deletedEdgeId?: string, 
+  onNodeClick?: (node: any) => void, 
+  onEdgeClick?: (edge: any) => void, 
+  onEdgeConnect?: (connection: any) => void, 
+  isDarkMode?: boolean, 
+  onSnapshot?: (nodes: any[], edges: any[]) => void, 
+  onShowSummary?: () => void, 
+  isNeuralView?: boolean 
+}) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { fitView, screenToFlowPosition, getNodes, getEdges } = useReactFlow();
@@ -125,8 +157,12 @@ function BoardInner({ newItems, restoreState, updatedNodes, updatedEdge, deleted
         });
         return nextNodes;
       });
+      // Cleanup to prevent stale re-processing
+      if (clearUpdatedNodes) {
+        setTimeout(clearUpdatedNodes, 0);
+      }
     }
-  }, [updatedNodes, setNodes]);
+  }, [updatedNodes, setNodes, clearUpdatedNodes]);
 
   useEffect(() => {
     if (updatedEdge) {
@@ -152,8 +188,12 @@ function BoardInner({ newItems, restoreState, updatedNodes, updatedEdge, deleted
         }
         return e;
       }));
+      // Cleanup
+      if (clearUpdatedEdge) {
+        setTimeout(clearUpdatedEdge, 0);
+      }
     }
-  }, [updatedEdge, setEdges, isDarkMode]);
+  }, [updatedEdge, setEdges, isDarkMode, clearUpdatedEdge]);
 
   // Context Menu Global Listeners
   useEffect(() => {
@@ -172,7 +212,7 @@ function BoardInner({ newItems, restoreState, updatedNodes, updatedEdge, deleted
         if (!originalNode) return nds;
         const newNode = {
           ...originalNode,
-          id: `node-${Date.now()}`,
+          id: `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           position: { x: originalNode.position.x + 40, y: originalNode.position.y + 40 },
           selected: false,
         };
@@ -271,7 +311,7 @@ function BoardInner({ newItems, restoreState, updatedNodes, updatedEdge, deleted
       y: window.innerHeight / 2,
     });
     const newNode = {
-      id: `node-${Date.now()}`,
+      id: `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type,
       position,
       data: { label: presetLabel || NODE_TYPE_LABELS[type] || 'New Node', details: 'Click to edit' },
@@ -320,7 +360,7 @@ function BoardInner({ newItems, restoreState, updatedNodes, updatedEdge, deleted
       y: window.innerHeight / 2,
     });
     const newNode = {
-      id: `node-${Date.now()}`,
+      id: `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'sticky',
       position,
       data: { label: 'New Note', details: 'Click to edit' },
@@ -457,7 +497,7 @@ function BoardInner({ newItems, restoreState, updatedNodes, updatedEdge, deleted
     });
 
     const newNode = {
-      id: `node-${Date.now()}`,
+      id: `node-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'sticky',
       position,
       data: { label: '', details: '' },
