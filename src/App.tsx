@@ -23,6 +23,8 @@ import PersonaSetupModal from './components/PersonaSetupModal';
 import { useAuth } from './lib/AuthContext';
 import LoginOverlay from './components/LoginOverlay';
 import UserProfileDropdown from './components/UserProfileDropdown';
+import QuickSetupModal from './components/QuickSetupModal';
+import { MODELS } from './lib/models';
 
 type Message = {
   id: string;
@@ -111,6 +113,7 @@ export default function App() {
   const [showThinkingModes, setShowThinkingModes] = useState(false);
   const [showFrameworkSelector, setShowFrameworkSelector] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isQuickSetupOpen, setIsQuickSetupOpen] = useState(false);
   const [userApiKey, setUserApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-user-api-key') || '' : ''));
   const [anthropicApiKey, setAnthropicApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-anthropic-api-key') || '' : ''));
   const [sessionSummary, setSessionSummary] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-session-summary-v1') || '' : ''));
@@ -124,7 +127,7 @@ export default function App() {
   const [isNeuralViewOpen, setIsNeuralViewOpen] = useState(false);
   const [customBaseUrl, setCustomBaseUrl] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-base-url') || 'https://api.openai.com/v1' : 'https://api.openai.com/v1'));
   const [customModelName, setCustomModelName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-model-name') || 'gpt-4o' : 'gpt-4o'));
-  
+
   // Local state for manual node editing (to prevent focus loss and lag)
   const [localLabel, setLocalLabel] = useState('');
   const [localDetails, setLocalDetails] = useState('');
@@ -396,7 +399,7 @@ export default function App() {
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [updatedNodes, setUpdatedNodes] = useState<any[]>([]);
   const clearUpdatedNodes = useCallback(() => setUpdatedNodes([]), []);
-  
+
   const [deletedNodeId, setDeletedNodeId] = useState<string | undefined>(undefined);
   const [nodeMessages, setNodeMessages] = useState<Record<string, Message[]>>({});
   const [nodeHistory, setNodeHistory] = useState<Record<string, any[]>>({});
@@ -691,7 +694,7 @@ export default function App() {
     }
     setSelectedEdge(null);
     setSelectedNode(node);
-    
+
     // Initialize local edit state
     if (node) {
       setLocalLabel(node.data.label || '');
@@ -818,13 +821,13 @@ export default function App() {
 
   const handleSaveNodeUpdate = () => {
     if (!selectedNode) return;
-    
+
     const nodeId = selectedNode.id;
     const updateData = { label: localLabel, details: localDetails };
-    
+
     // Update local state for immediate feedback in the panel
     setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, ...updateData } });
-    
+
     // Dispatch update to board
     setUpdatedNodes([{ id: nodeId, data: updateData }]);
     setIsNodeEditDirty(false);
@@ -839,24 +842,43 @@ export default function App() {
   // All node type options for the dropdown
   const nodeTypeOptions = Object.entries(NODE_TYPE_LABELS).map(([value, label]) => ({ value, label }));
 
+  const handleOnboardingStart = (config: { model: string, frequency: number }) => {
+    setSummaryFrequency(config.frequency);
+    setAiModel(config.model);
+    setHasStarted(true);
+    localStorage.setItem('problemspace-setup-complete', 'true');
+    localStorage.setItem('problemspace-summary-freq', config.frequency.toString());
+    localStorage.setItem('problemspace-ai-model', config.model);
+  };
+
   if (!isAuthenticated) {
     return <LoginOverlay isDarkMode={isDarkMode} toggleDarkMode={() => setIsDarkMode(!isDarkMode)} />;
   }
 
   if (!hasStarted) {
-    return <LandingPage
-      isDarkMode={isDarkMode}
-      toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
-      onStart={(config) => {
-        setSummaryFrequency(config.frequency);
-        setAiModel(config.model);
-        setHasStarted(true);
-      }}
+    return <LandingPage 
+      onStart={handleOnboardingStart} 
+      isDarkMode={isDarkMode} 
+      toggleDarkMode={() => setIsDarkMode(!isDarkMode)} 
     />;
   }
 
   return (
     <div className="flex h-screen w-full bg-[var(--color-cream-warm)] text-neutral-900 dark:text-neutral-100 font-sans overflow-hidden transition-colors">
+      <AnimatePresence>
+        {isQuickSetupOpen && (
+          <QuickSetupModal
+            initialModel={aiModel}
+            initialFrequency={summaryFrequency}
+            onSave={(config) => {
+              setSummaryFrequency(config.frequency);
+              setAiModel(config.model);
+              setIsQuickSetupOpen(false);
+            }}
+            onClose={() => setIsQuickSetupOpen(false)}
+          />
+        )}
+      </AnimatePresence>
       {/* Background Grid Pattern */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05] z-0"
@@ -928,7 +950,10 @@ export default function App() {
 
                 <div className="mx-1.5 w-px h-5 bg-[var(--color-border)]" />
 
-                <UserProfileDropdown onOpenSettings={() => setIsSettingsOpen(true)} />
+                <UserProfileDropdown 
+                  onOpenSettings={() => setIsSettingsOpen(true)} 
+                  onOpenSetup={() => setIsQuickSetupOpen(true)}
+                />
 
                 <button
                   onClick={() => setIsLeftCollapsed(true)}

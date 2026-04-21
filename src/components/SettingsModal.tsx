@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, X, Key, ShieldCheck, Zap, Info, Trash2, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MODELS } from '../lib/models';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -16,15 +17,6 @@ interface SettingsModalProps {
   onSaveCustomModel: (name: string) => void;
 }
 
-const MODELS = [
-  { id: 'gemini-1.5-pro', name: 'Strategic Alpha', provider: 'google', version: '1.5 Pro', description: 'Complex reasoning & long context' },
-  { id: 'gemini-1.5-flash', name: 'Rapid Pulse', provider: 'google', version: '1.5 Flash', description: 'Fast, lightweight processing' },
-  { id: 'gemini-2.0-flash', name: 'Neural Flash', provider: 'google', version: '2.0 (Latest)', description: 'Balanced speed & intelligence' },
-  { id: 'gemini-2.0-pro-exp-02-05', name: 'Pro Architect', provider: 'google', version: '2.0 (Exp)', description: 'Maximum reasoning power' },
-  { id: 'claude-3-5-sonnet-latest', name: 'Sonnet Catalyst', provider: 'anthropic', version: '3.5 Sonnet', description: 'Highly creative & nuanced' },
-  { id: 'claude-3-5-haiku-latest', name: 'Haiku Sprint', provider: 'anthropic', version: '3.5 Haiku', description: 'Instant, efficient feedback' },
-  { id: 'universal', name: 'Universal Link', provider: 'universal', version: 'Any', description: 'Connect to any OpenAI-compatible API (Groq, Together, LM Studio)' },
-];
 
 export default function SettingsModal({ 
   onClose, 

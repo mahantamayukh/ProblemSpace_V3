@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { LogOut, Settings, Key, CheckCircle2, AlertCircle, ChevronDown, Sparkles, Shield } from 'lucide-react';
+import { LogOut, Settings, Key, CheckCircle2, AlertCircle, ChevronDown, Sparkles, Shield, Target } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 
 interface UserProfileDropdownProps {
   onOpenSettings?: () => void;
+  onOpenSetup?: () => void;
 }
 
-export default function UserProfileDropdown({ onOpenSettings }: UserProfileDropdownProps) {
+export default function UserProfileDropdown({ onOpenSettings, onOpenSetup }: UserProfileDropdownProps) {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, right: 0 });
@@ -167,6 +168,24 @@ export default function UserProfileDropdown({ onOpenSettings }: UserProfileDropd
             <div style={{ textAlign: 'left' }}>
               <p style={{ fontSize: 11, fontWeight: 600, color: styles.textPrimary, marginBottom: 1 }}>Intelligence Settings</p>
               <p style={{ fontSize: 10, color: styles.textMuted }}>API keys, model, memory config</p>
+            </div>
+          </button>
+        )}
+
+        {onOpenSetup && (
+          <button
+            id="profile-open-setup"
+            onClick={() => { setIsOpen(false); onOpenSetup(); }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, cursor: 'pointer', background: 'transparent', border: 'none', marginBottom: 2 }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-cream-warm)')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'var(--color-sky-light)', border: '1px solid var(--color-sky)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}>
+              <Target style={{ width: 13, height: 13, color: 'var(--color-ink)' }} />
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <p style={{ fontSize: 11, fontWeight: 600, color: styles.textPrimary, marginBottom: 1 }}>Setup Workspace</p>
+              <p style={{ fontSize: 10, color: styles.textMuted }}>Tune reasoning vs speed</p>
             </div>
           </button>
         )}
