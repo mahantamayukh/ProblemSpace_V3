@@ -14,7 +14,8 @@ import {
   NodeResizer,
   ConnectionMode,
 } from '@xyflow/react';
-import { Network, Plus, FileText, Download, BoxSelect, Image as ImageIcon, Trash2, LayoutGrid, Undo2, Redo2 } from 'lucide-react';
+import { Network, Plus, FileText, Download, BoxSelect, Image as ImageIcon, Trash2, LayoutGrid, Undo2, Redo2, Check, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import '@xyflow/react/dist/style.css';
 import { nodeTypes, ALL_NODE_TYPES, NODE_TYPE_LABELS } from './nodes/CustomNodes';
 import dagre from 'dagre';
@@ -150,6 +151,14 @@ function BoardInner({
   // Local UI State
   const [showNodePalette, setShowNodePalette] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   // Handle full state restore
   useEffect(() => {
@@ -447,6 +456,7 @@ function BoardInner({
   }, [setNodes, setEdges, edges, fitView]);
 
   const handleExport = useCallback(async (format: 'png' | 'svg' | 'pdf') => {
+    setShowExportMenu(false); // Close menu immediately
     const element = document.querySelector('.react-flow__viewport') as HTMLElement;
     if (!element) return;
 
@@ -524,9 +534,10 @@ function BoardInner({
           pdf.save(`problemspace-board-${new Date().toISOString().slice(0, 10)}.pdf`);
         }
       }
+      setNotification({ message: `Successfully exported as ${format.toUpperCase()}`, type: 'success' });
     } catch (err) {
       console.error('Failed to export', err);
-      alert('Export failed due to a cross-origin image or size limitation.');
+      setNotification({ message: 'Export failed. Check console for details.', type: 'error' });
     } finally {
       element.style.transform = originalTransform;
       setShowExportMenu(false);
@@ -555,6 +566,23 @@ function BoardInner({
       className={`w-full h-full transition-colors relative overflow-hidden ${isNeuralView ? 'bg-neutral-950' : 'bg-[var(--color-cream)]'}`}
       onDoubleClick={onPaneDoubleClick}
     >
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -20, x: '-50%' }}
+            className={`absolute top-24 left-1/2 z-[200] px-4 py-2 rounded-xl shadow-lg border text-xs font-bold tracking-tight flex items-center gap-2 backdrop-blur-md
+              ${notification.type === 'success' 
+                ? 'bg-emerald-500/90 border-emerald-400 text-white' 
+                : 'bg-red-500/90 border-red-400 text-white'}`}
+          >
+            {notification.type === 'success' ? <Check className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+            {notification.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
       {isNeuralView && (
         <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
           {/* Scanning line effect */}

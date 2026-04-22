@@ -995,7 +995,7 @@ export default function App() {
                 >
                   <NeuronIcon className="w-4 h-4" />
                 </button>
-                
+
                 {/* Hidden on small mobile to save space */}
                 <div className="hidden sm:flex items-center gap-1">
                   <button
