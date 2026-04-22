@@ -91,7 +91,8 @@ function BoardInner({
   isDarkMode?: boolean, 
   onSnapshot?: (nodes: any[], edges: any[]) => void, 
   onShowSummary?: () => void, 
-  isNeuralView?: boolean 
+  isNeuralView?: boolean,
+  universalApiKey?: string
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -765,10 +766,15 @@ function BoardInner({
   );
 }
 
-export default function Board(props: any) {
+export default function Board({
+  onShowSummary,
+  isNeuralView,
+  universalApiKey,
+  ...props
+}: any) {
   return (
     <ReactFlowProvider>
-      <BoardInner {...props} />
+      <BoardInner {...props} onShowSummary={onShowSummary} isNeuralView={isNeuralView} universalApiKey={universalApiKey} />
     </ReactFlowProvider>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Send, Pin, X, BookmarkCheck, RotateCcw, MessageSquarePlus } from 'lucide-react';
+import { User, Send, Pin, X, BookmarkCheck, RotateCcw } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { generatePersonaResponse } from '../lib/gemini';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -44,6 +44,7 @@ interface AudienceSimulatorProps {
   aiModel?: string;
   customBaseUrl?: string;
   customModelName?: string;
+  universalApiKey?: string;
 }
 
 // Context-aware suggested questions
@@ -77,9 +78,10 @@ export default function AudienceSimulator({
   initialLabel,
   apiKey,
   anthropicApiKey,
-  aiModel = 'gemini-1.5-pro',
+  aiModel = 'gemini-2.0-flash',
   customBaseUrl,
-  customModelName
+  customModelName,
+  universalApiKey
 }: AudienceSimulatorProps) {
 
   const makeInitialMessages = (): Message[] => [
@@ -142,7 +144,8 @@ export default function AudienceSimulator({
         anthropicApiKey,
         undefined, // oauthToken
         customBaseUrl,
-        customModelName
+        customModelName,
+        universalApiKey
       );
       setHistory(newHistory);
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: responseText }]);
@@ -215,25 +218,25 @@ export default function AudienceSimulator({
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="w-full max-w-lg h-[75vh] min-h-[520px] relative z-10 flex flex-col bg-[var(--color-cream)] border border-[var(--color-border)] rounded-2xl shadow-2xl overflow-hidden"
+          className="w-full max-w-lg h-[80vh] min-h-[550px] relative z-10 flex flex-col bg-[var(--color-cream)] border border-[var(--color-border)] rounded-[2.5rem] shadow-[var(--shadow-elevated)] overflow-hidden"
         >
           {/* Header */}
-          <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-sage-light)] flex items-start justify-between shrink-0 transition-colors rounded-t-2xl">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 shrink-0 rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm">
-                <User className="w-4 h-4 text-white" />
+          <div className="p-5 border-b border-[var(--color-border)] bg-[var(--color-sage-light)] flex items-start justify-between shrink-0 transition-colors">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 shrink-0 rounded-2xl bg-[var(--color-sage)] text-[var(--color-cream)] flex items-center justify-center shadow-lg transform -rotate-3">
+                <User className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
-                    Simulated Interview
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-sage)]">
+                    Simulated Persona
                   </span>
                   {onResetPersona && (
                     <button
                       onClick={onResetPersona}
-                      className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hover:text-[var(--color-ink)] transition-all"
+                      className="text-[10px] font-bold text-[var(--color-sage)] opacity-60 hover:opacity-100 hover:underline transition-all"
                     >
-                      (Reset Persona)
+                      (Config Persona)
                     </button>
                   )}
                 </div>
@@ -244,50 +247,50 @@ export default function AudienceSimulator({
                     onChange={(e) => setCustomLabel(e.target.value)}
                     onBlur={() => setIsEditingLabel(false)}
                     onKeyDown={(e) => e.key === 'Enter' && setIsEditingLabel(false)}
-                    className="font-semibold text-sm bg-[var(--color-cream)] border-b border-[var(--color-border)] focus:outline-none mt-0.5 rounded px-1"
+                    className="font-bold text-base bg-[var(--color-cream)] border-b border-[var(--color-sage)] focus:outline-none mt-1 rounded px-1 text-[var(--color-ink)]"
                   />
                 ) : (
                   <span
                     onClick={() => setIsEditingLabel(true)}
-                    className="font-semibold text-sm text-[var(--color-ink)] leading-tight mt-0.5 cursor-pointer hover:text-emerald-600 transition-colors flex items-center gap-1.5"
+                    className="font-black text-base text-[var(--color-ink)] leading-tight mt-1 cursor-pointer hover:text-[var(--color-sage)] transition-colors flex items-center gap-2"
                   >
-                    {customLabel} <span className="text-[10px] text-[var(--color-ink-muted)] font-normal">click to rename</span>
+                    {customLabel}
                   </span>
                 )}
-                <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 line-clamp-1 mt-0.5 italic">
-                  Asking {persona.label}...
+                <span className="text-[11px] font-medium text-[var(--color-sage)] line-clamp-1 mt-1 opacity-80">
+                  Interaction with {persona.label}...
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1 -mt-0.5">
+            <div className="flex items-center gap-2">
               {savedInterviewCount > 0 && (
-                <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30">
+                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-sage)] border border-[var(--color-sage)] px-3 py-1 rounded-full bg-[var(--color-cream)] shadow-sm">
                   {savedInterviewCount} saved
                 </span>
               )}
               <button
                 onClick={onClose}
-                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-cream-warm)] transition-all"
+                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[var(--color-cream-deep)] transition-all border border-transparent hover:border-[var(--color-border)]"
               >
-                <X className="w-4 h-4 text-[var(--color-ink-muted)]" />
+                <X className="w-5 h-5 text-[var(--color-ink-muted)]" />
               </button>
             </div>
           </div>
 
           {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[var(--color-cream-warm)] transition-colors">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[var(--color-cream)] transition-colors custom-scrollbar">
             {messages.map((msg, i) => (
-              <div key={msg.id} className={`flex flex-col gap-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+              <div key={msg.id} className={`flex flex-col gap-2 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <div
-                  className={`max-w-[90%] p-3.5 rounded-2xl ${msg.role === 'user'
-                    ? 'bg-[var(--color-ink)] text-[var(--color-cream)] shadow-sm'
-                    : 'bg-[var(--color-cream)] border border-[var(--color-border)] shadow-sm text-[var(--color-ink)]'
+                  className={`max-w-[85%] p-4 rounded-2xl shadow-sm ${msg.role === 'user'
+                    ? 'bg-[var(--color-ink)] text-[var(--color-cream)]'
+                    : 'bg-[var(--color-cream-warm)] border border-[var(--color-border)] text-[var(--color-ink)]'
                     }`}
                 >
                   {msg.role === 'user' ? (
                     <p className="text-sm font-medium whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                   ) : (
-                    <div className="markdown-body prose prose-sm max-w-none prose-p:leading-relaxed prose-p:my-1 text-sm dark:prose-invert">
+                    <div className="markdown-body prose prose-sm max-w-none prose-p:leading-relaxed prose-p:my-1 text-sm text-[var(--color-ink)]">
                       <Markdown>{msg.text}</Markdown>
                     </div>
                   )}
@@ -295,9 +298,9 @@ export default function AudienceSimulator({
                 {msg.role === 'model' && i > 0 && (
                   <button
                     onClick={() => handlePin(msg.text)}
-                    className="flex items-center gap-1 mt-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-500 hover:text-emerald-800 transition-colors px-1"
+                    className="flex items-center gap-1.5 mt-1 text-[10px] font-black uppercase tracking-widest text-[var(--color-sage)] hover:text-[var(--color-ink)] transition-colors px-1"
                   >
-                    <Pin className="w-3 h-3" /> Pin as Insight
+                    <Pin className="w-3 h-3" /> Pin Reflection
                   </button>
                 )}
               </div>
@@ -305,16 +308,16 @@ export default function AudienceSimulator({
 
             {/* Suggested questions */}
             {messages.length === 1 && !isLoading && (
-              <div className="space-y-2 pt-1">
-                <p className="text-[10px] font-medium text-[var(--color-ink-muted)]">
-                  Suggested questions
+              <div className="space-y-3 pt-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-ink-muted)] ml-1">
+                  Guided Inquiries
                 </p>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   {suggestedQuestions.map((q, i) => (
                     <button
                       key={i}
                       onClick={() => handleSend(q)}
-                      className="text-left text-xs font-medium text-[var(--color-ink-light)] p-2.5 border border-[var(--color-border)] rounded-xl hover:border-emerald-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all leading-snug"
+                      className="text-left text-xs font-bold text-[var(--color-ink-light)] p-3.5 border border-[var(--color-border)] rounded-2xl bg-[var(--color-cream-warm)] hover:border-[var(--color-sage)] hover:text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] transition-all leading-snug shadow-sm"
                     >
                       {q}
                     </button>
@@ -325,10 +328,10 @@ export default function AudienceSimulator({
 
             {isLoading && (
               <div className="flex items-start">
-                <div className="bg-[var(--color-cream)] border border-[var(--color-border)] p-3.5 flex items-center gap-2 rounded-2xl shadow-sm">
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+                <div className="bg-[var(--color-cream-warm)] border border-[var(--color-border)] p-4 flex items-center gap-2 rounded-2xl shadow-sm">
+                  <div className="w-2 h-2 bg-[var(--color-sage)] rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-[var(--color-sage)] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                  <div className="w-2 h-2 bg-[var(--color-sage)] rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
                 </div>
               </div>
             )}
@@ -342,26 +345,26 @@ export default function AudienceSimulator({
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="px-4 py-2 border-t border-[var(--color-border)] bg-[var(--color-cream)] flex items-center gap-2 shrink-0 overflow-hidden"
+                className="px-6 py-3 border-t border-[var(--color-border)] bg-[var(--color-cream-warm)] flex items-center gap-3 shrink-0 overflow-hidden"
               >
                 {onSaveInterview && (
                   <button
                     onClick={handleSaveInterview}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold rounded-lg border transition-all ${saved
-                      ? 'border-emerald-500 bg-emerald-500 text-white'
-                      : 'border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-cream-warm)] hover:shadow-sm'
+                    className={`flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all ${saved
+                      ? 'bg-[var(--color-sage)] border-[var(--color-sage)] text-[var(--color-cream)]'
+                      : 'border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-ink)] hover:border-[var(--color-sage)] hover:text-[var(--color-sage)] shadow-sm'
                       }`}
                   >
-                    <BookmarkCheck className="w-3 h-3" />
-                    {saved ? 'Changes Saved!' : 'Save Progress'}
+                    <BookmarkCheck className="w-3.5 h-3.5" />
+                    {saved ? 'Interview Saved' : 'Archive Session'}
                   </button>
                 )}
                 <button
                   onClick={handleNewConversation}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold rounded-lg border border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-cream-warm)] hover:shadow-sm transition-all"
+                  className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl border border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-ink)] hover:border-[var(--color-lavender)] hover:text-[var(--color-lavender)] shadow-sm transition-all"
                 >
-                  <RotateCcw className="w-3 h-3" />
-                  New Conversation
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Reset Chat
                 </button>
                 <AnimatePresence>
                   {showSaveConfirm && (
@@ -369,9 +372,9 @@ export default function AudienceSimulator({
                       initial={{ opacity: 0, x: -6 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0 }}
-                      className="text-[10px] font-medium text-emerald-500 ml-1"
+                      className="text-[10px] font-black uppercase tracking-widest text-[var(--color-sage)] ml-auto"
                     >
-                      ✓ Saved to sidebar
+                      ✓ Check Sidebar
                     </motion.span>
                   )}
                 </AnimatePresence>
@@ -380,7 +383,7 @@ export default function AudienceSimulator({
           </AnimatePresence>
 
           {/* Input Area */}
-          <div className="p-3 border-t border-[var(--color-border)] bg-[var(--color-cream)] shrink-0 transition-colors rounded-b-2xl">
+          <div className="p-4 border-t border-[var(--color-border)] bg-[var(--color-cream)] shrink-0 transition-colors">
             <div className="relative">
               <textarea
                 ref={textareaRef}
@@ -396,23 +399,23 @@ export default function AudienceSimulator({
                     handleSend();
                   }
                 }}
-                placeholder={`Ask ${persona.label} a question…`}
-                className="w-full resize-none text-sm p-3 pr-12 border border-[var(--color-border)] rounded-xl bg-[var(--color-cream-warm)] text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800 transition-all leading-relaxed"
-                style={{ minHeight: '36px', maxHeight: '130px' }}
+                placeholder={`Ask ${persona.label} anything…`}
+                className="w-full resize-none text-sm p-4 pr-14 border border-[var(--color-border)] rounded-[1.25rem] bg-[var(--color-cream-warm)] text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--color-sage-light)] focus:border-[var(--color-sage)] transition-all leading-relaxed shadow-sm"
+                style={{ minHeight: '52px', maxHeight: '130px' }}
               />
               <button
                 onClick={() => handleSend()}
                 disabled={isLoading || !input.trim()}
-                className="absolute right-2 bottom-2 w-8 h-8 flex items-center justify-center bg-emerald-500 text-white rounded-lg shadow-sm hover:shadow-md hover:bg-emerald-600 transition-all disabled:opacity-40"
+                className="absolute right-2.5 bottom-2.5 w-10 h-10 flex items-center justify-center bg-[var(--color-ink)] text-[var(--color-cream)] rounded-xl shadow-lg hover:bg-[var(--color-sage)] hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:hover:scale-100 disabled:bg-[var(--color-ink)]"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex justify-between items-center mt-2 px-0.5">
-              <span className="text-[10px] font-medium text-[var(--color-ink-muted)]">Shift+Enter for newline</span>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">Simulated Research</span>
+            <div className="flex justify-between items-center mt-3 px-1">
+              <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-ink-muted)]">[Enter] Send · [Shift+Enter] Newline</span>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-sage)] animate-pulse shadow-[0_0_8px_var(--color-sage)]" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--color-sage)]">Simulated Research Active</span>
               </div>
             </div>
           </div>

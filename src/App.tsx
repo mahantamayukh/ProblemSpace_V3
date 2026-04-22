@@ -10,7 +10,7 @@ import LandingPage from './components/LandingPage';
 import FrameworkSelector from './components/FrameworkSelector';
 import ExercisePanel from './components/ExercisePanel';
 import SprintSummary from './components/SprintSummary';
-import SettingsModal from './components/SettingsModal';
+import IntelligenceHubModal from './components/IntelligenceHubModal';
 import SummaryEditModal from './components/SummaryEditModal';
 import { PromptInputBox } from './components/ui/ai-prompt-box';
 import { useSprintState } from './hooks/useSprintState';
@@ -23,7 +23,6 @@ import PersonaSetupModal from './components/PersonaSetupModal';
 import { useAuth } from './lib/AuthContext';
 import LoginOverlay from './components/LoginOverlay';
 import UserProfileDropdown from './components/UserProfileDropdown';
-import QuickSetupModal from './components/QuickSetupModal';
 import { MODELS } from './lib/models';
 
 type Message = {
@@ -112,8 +111,7 @@ export default function App() {
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [showThinkingModes, setShowThinkingModes] = useState(false);
   const [showFrameworkSelector, setShowFrameworkSelector] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isQuickSetupOpen, setIsQuickSetupOpen] = useState(false);
+  const [isIntelligenceHubOpen, setIsIntelligenceHubOpen] = useState(false);
   const [userApiKey, setUserApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-user-api-key') || '' : ''));
   const [anthropicApiKey, setAnthropicApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-anthropic-api-key') || '' : ''));
   const [sessionSummary, setSessionSummary] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-session-summary-v1') || '' : ''));
@@ -127,6 +125,8 @@ export default function App() {
   const [isNeuralViewOpen, setIsNeuralViewOpen] = useState(false);
   const [customBaseUrl, setCustomBaseUrl] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-base-url') || 'https://api.openai.com/v1' : 'https://api.openai.com/v1'));
   const [customModelName, setCustomModelName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-model-name') || 'gpt-4o' : 'gpt-4o'));
+  const [universalApiKey, setUniversalApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-universal-api-key') || '' : ''));
+
 
   // Local state for manual node editing (to prevent focus loss and lag)
   const [localLabel, setLocalLabel] = useState('');
@@ -145,6 +145,7 @@ export default function App() {
           localStorage.setItem('problemspace-ai-model', aiModel);
           localStorage.setItem('problemspace-custom-base-url', customBaseUrl);
           localStorage.setItem('problemspace-custom-model-name', customModelName);
+          localStorage.setItem('problemspace-universal-api-key', universalApiKey);
           localStorage.setItem('problemspace-chat-messages', JSON.stringify(messages));
           localStorage.setItem('problemspace-chat-history', JSON.stringify(history.slice(-20)));
           localStorage.setItem('problemspace-interviews-v1', JSON.stringify(savedInterviews));
@@ -165,7 +166,7 @@ export default function App() {
     const needsAnthropicKey = aiModel.startsWith('claude-') && !anthropicApiKey;
     const needsUniversalKey = aiModel === 'universal' && !userApiKey;
     if (needsGeminiKey || needsAnthropicKey || needsUniversalKey) {
-      setIsSettingsOpen(true);
+      setIsIntelligenceHubOpen(true);
     }
   }, [isAuthenticated, aiModel, userApiKey, anthropicApiKey]);
 
@@ -512,7 +513,8 @@ export default function App() {
             anthropicApiKey,
             undefined, // oauthToken
             aiModel === 'universal' ? customBaseUrl : undefined,
-            aiModel === 'universal' ? customModelName : undefined
+            aiModel === 'universal' ? customModelName : undefined,
+            universalApiKey
           );
           setPendingSummary(draft);
           setShowSummaryEditModal(true);
@@ -544,7 +546,8 @@ export default function App() {
         anthropicApiKey,
         undefined, // oauthToken
         aiModel === 'universal' ? customBaseUrl : undefined,
-        aiModel === 'universal' ? customModelName : undefined
+        aiModel === 'universal' ? customModelName : undefined,
+        universalApiKey
       );
 
       setHistory(newHistory.slice(-30)); // Safety cap on total raw history
@@ -583,7 +586,8 @@ export default function App() {
         anthropicApiKey,
         undefined, // oauthToken
         aiModel === 'universal' ? customBaseUrl : undefined,
-        aiModel === 'universal' ? customModelName : undefined
+        aiModel === 'universal' ? customModelName : undefined,
+        universalApiKey
       );
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: `🔄 **Success!** ${text}` }]);
     } catch (err) {
@@ -631,7 +635,7 @@ export default function App() {
         anthropicApiKey,
         undefined, // oauthToken
         aiModel === 'universal' ? customBaseUrl : undefined,
-        aiModel === 'universal' ? customModelName : undefined
+        aiModel === 'universal' ? customModelName : undefined, universalApiKey
       );
     } catch (err) {
       console.error('Synthesis failed:', err);
@@ -674,7 +678,8 @@ export default function App() {
         anthropicApiKey,
         undefined, // oauthToken
         aiModel === 'universal' ? customBaseUrl : undefined,
-        aiModel === 'universal' ? customModelName : undefined
+        aiModel === 'universal' ? customModelName : undefined,
+        universalApiKey
       );
       setHistory(aiResponseHistory.slice(-30));
       if (text) {
@@ -750,7 +755,7 @@ export default function App() {
         anthropicApiKey,
         undefined, // oauthToken
         aiModel === 'universal' ? customBaseUrl : undefined,
-        aiModel === 'universal' ? customModelName : undefined
+        aiModel === 'universal' ? customModelName : undefined, universalApiKey
       );
     } catch (err) {
       console.error("Node Synthesis failed:", err);
@@ -797,7 +802,7 @@ export default function App() {
         anthropicApiKey,
         undefined, // oauthToken
         aiModel === 'universal' ? customBaseUrl : undefined,
-        aiModel === 'universal' ? customModelName : undefined
+        aiModel === 'universal' ? customModelName : undefined, universalApiKey
       );
 
       setNodeHistory(prev => ({ ...prev, [nodeId]: newHistory }));
@@ -842,13 +847,35 @@ export default function App() {
   // All node type options for the dropdown
   const nodeTypeOptions = Object.entries(NODE_TYPE_LABELS).map(([value, label]) => ({ value, label }));
 
-  const handleOnboardingStart = (config: { model: string, frequency: number }) => {
-    setSummaryFrequency(config.frequency);
+  const handleIntelligenceSave = (config: {
+    model: string;
+    frequency: number;
+    geminiKey: string;
+    anthropicKey: string;
+    customBaseUrl: string;
+    customModelName: string;
+    universalKey: string;
+  }) => {
+    console.log("App: handleIntelligenceSave triggered with config:", config);
     setAiModel(config.model);
-    setHasStarted(true);
-    localStorage.setItem('problemspace-setup-complete', 'true');
-    localStorage.setItem('problemspace-summary-freq', config.frequency.toString());
+    setSummaryFrequency(config.frequency);
+    setUserApiKey(config.geminiKey);
+    setAnthropicApiKey(config.anthropicKey);
+    setCustomBaseUrl(config.customBaseUrl);
+    setCustomModelName(config.customModelName);
+    setUniversalApiKey(config.universalKey);
+    
+    // Global persistence
     localStorage.setItem('problemspace-ai-model', config.model);
+    localStorage.setItem('problemspace-summary-freq', config.frequency.toString());
+    localStorage.setItem('problemspace-user-api-key', config.geminiKey);
+    localStorage.setItem('problemspace-anthropic-api-key', config.anthropicKey);
+    localStorage.setItem('problemspace-custom-base-url', config.customBaseUrl);
+    localStorage.setItem('problemspace-custom-model-name', config.customModelName);
+    localStorage.setItem('problemspace-universal-api-key', config.universalKey);
+    
+    setHasStarted(true);
+    setIsIntelligenceHubOpen(false);
   };
 
   if (!isAuthenticated) {
@@ -857,7 +884,7 @@ export default function App() {
 
   if (!hasStarted) {
     return <LandingPage 
-      onStart={handleOnboardingStart} 
+      onStart={handleIntelligenceSave} 
       isDarkMode={isDarkMode} 
       toggleDarkMode={() => setIsDarkMode(!isDarkMode)} 
     />;
@@ -866,16 +893,19 @@ export default function App() {
   return (
     <div className="flex h-screen w-full bg-[var(--color-cream-warm)] text-neutral-900 dark:text-neutral-100 font-sans overflow-hidden transition-colors">
       <AnimatePresence>
-        {isQuickSetupOpen && (
-          <QuickSetupModal
-            initialModel={aiModel}
-            initialFrequency={summaryFrequency}
-            onSave={(config) => {
-              setSummaryFrequency(config.frequency);
-              setAiModel(config.model);
-              setIsQuickSetupOpen(false);
+        {isIntelligenceHubOpen && (
+          <IntelligenceHubModal
+            initialConfig={{
+              model: aiModel,
+              frequency: summaryFrequency,
+              geminiKey: userApiKey,
+              anthropicKey: anthropicApiKey,
+              customBaseUrl: customBaseUrl,
+              customModelName: customModelName,
+              universalKey: universalApiKey
             }}
-            onClose={() => setIsQuickSetupOpen(false)}
+            onSave={handleIntelligenceSave}
+            onClose={() => setIsIntelligenceHubOpen(false)}
           />
         )}
       </AnimatePresence>
@@ -951,8 +981,7 @@ export default function App() {
                 <div className="mx-1.5 w-px h-5 bg-[var(--color-border)]" />
 
                 <UserProfileDropdown 
-                  onOpenSettings={() => setIsSettingsOpen(true)} 
-                  onOpenSetup={() => setIsQuickSetupOpen(true)}
+                  onOpenSettings={() => setIsIntelligenceHubOpen(true)} 
                 />
 
                 <button
@@ -1200,25 +1229,24 @@ export default function App() {
 
         {/* The React Flow UI requires a stable mounting container, which is fine since we pass restoreState down dynamically! */}
         <Board
-          key="master-board" // Ensure the board never full unmounts unless necessary, restoring via prop instead.
+          key="master-board"
           newItems={boardItems}
           restoreState={restoreState}
           updatedNodes={updatedNodes}
           clearUpdatedNodes={clearUpdatedNodes}
           updatedEdge={updatedEdge}
           clearUpdatedEdge={clearUpdatedEdge}
-          deletedNodeId={deletedNodeId}
-          deletedEdgeId={deletedEdgeId}
           onNodeClick={handleNodeClick}
           onEdgeClick={handleEdgeClick}
           onEdgeConnect={handleEdgeConnect}
           isDarkMode={isDarkMode}
-          isNeuralView={activeBoardId === 'ai-memory'}
-          onSnapshot={(nds, eds) => {
-            setBoardNodesSnapshot(nds);
-            setBoardEdgesSnapshot(eds);
+          onSnapshot={(nodes, edges) => {
+            setBoardNodesSnapshot(nodes);
+            setBoardEdgesSnapshot(edges);
           }}
           onShowSummary={() => setShowSummary(true)}
+          isNeuralView={isNeuralViewOpen}
+          universalApiKey={universalApiKey}
         />
 
         {/* Node Focus Panel */}
@@ -1651,24 +1679,10 @@ export default function App() {
       <SignalScanner
         isOpen={showSignalScanner}
         onClose={() => setShowSignalScanner(false)}
-        onScan={async (q) => await scanSignal(q, (data) => setBoardItems(data), userApiKey, aiModel, anthropicApiKey, undefined, aiModel === 'universal' ? customBaseUrl : undefined, aiModel === 'universal' ? customModelName : undefined)}
+        onScan={async (q) => await scanSignal(q, (data) => setBoardItems(data), userApiKey, aiModel, anthropicApiKey, undefined, aiModel === 'universal' ? customBaseUrl : undefined, aiModel === 'universal' ? customModelName : undefined, universalApiKey)}
       />
 
-      {isSettingsOpen && (
-        <SettingsModal
-          initialKey={userApiKey}
-          initialAnthropicKey={anthropicApiKey}
-          initialModel={aiModel}
-          initialBaseUrl={customBaseUrl}
-          initialCustomModel={customModelName}
-          onSaveKey={(k) => setUserApiKey(k)}
-          onSaveAnthropicKey={(k) => setAnthropicApiKey(k)}
-          onSaveModel={(m) => setAiModel(m)}
-          onSaveBaseUrl={(url) => setCustomBaseUrl(url)}
-          onSaveCustomModel={(name) => setCustomModelName(name)}
-          onClose={() => setIsSettingsOpen(false)}
-        />
-      )}
+      {/* IntelligenceHubModal replaces legacy Settings and QuickSetup paths */}
 
       {/* Summary Editor Modal */}
       {showSummaryEditModal && (
@@ -1737,6 +1751,7 @@ export default function App() {
           anthropicApiKey={anthropicApiKey}
           customBaseUrl={aiModel === 'universal' ? customBaseUrl : undefined}
           customModelName={aiModel === 'universal' ? customModelName : undefined}
+          universalApiKey={universalApiKey}
         />
       )}
 

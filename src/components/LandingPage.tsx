@@ -4,7 +4,7 @@ import { ArrowRight, Sparkles, Diamond, Search, Moon, Sun, Zap, HelpCircle, Foot
 import { motion, AnimatePresence } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import GrainyGradient from './ui/gradient-shader-card';
-import QuickSetupModal from './QuickSetupModal';
+import IntelligenceHubModal from './IntelligenceHubModal';
 
 interface Ripple {
   id: number;
@@ -232,13 +232,20 @@ export default function LandingPage({ onStart, isDarkMode, toggleDarkMode }: { o
       {/* Configuration Modal */}
       <AnimatePresence>
         {showConfig && (
-          <QuickSetupModal
+          <IntelligenceHubModal
             isFirstTime={true}
-            initialModel={model}
-            initialFrequency={frequency}
+            initialConfig={{
+              model: model,
+              frequency: frequency,
+              geminiKey: typeof window !== 'undefined' ? localStorage.getItem('problemspace-user-api-key') || '' : '',
+              anthropicKey: typeof window !== 'undefined' ? localStorage.getItem('problemspace-anthropic-api-key') || '' : '',
+              customBaseUrl: typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-base-url') || 'https://api.openai.com/v1' : 'https://api.openai.com/v1',
+              customModelName: typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-model-name') || 'gpt-4o' : 'gpt-4o',
+              universalKey: typeof window !== 'undefined' ? localStorage.getItem('problemspace-universal-api-key') || '' : ''
+            }}
             onSave={(config) => {
               setShowConfig(false);
-              onStart(config);
+              onStart(config as any);
             }}
             onClose={() => setShowConfig(false)}
           />

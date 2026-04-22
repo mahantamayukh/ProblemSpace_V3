@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { LogOut, Settings, Key, CheckCircle2, AlertCircle, ChevronDown, Sparkles, Shield, Target } from 'lucide-react';
+import { LogOut, Key, CheckCircle2, AlertCircle, ChevronDown, Sparkles, Shield, Database } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
+import { MODELS } from '../lib/models';
 
 interface UserProfileDropdownProps {
   onOpenSettings?: () => void;
-  onOpenSetup?: () => void;
 }
 
-export default function UserProfileDropdown({ onOpenSettings, onOpenSetup }: UserProfileDropdownProps) {
+export default function UserProfileDropdown({ onOpenSettings }: UserProfileDropdownProps) {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, right: 0 });
@@ -16,8 +16,20 @@ export default function UserProfileDropdown({ onOpenSettings, onOpenSetup }: Use
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const geminiKey = typeof window !== 'undefined' ? localStorage.getItem('problemspace-user-api-key') || '' : '';
-  const aiModel = typeof window !== 'undefined' ? localStorage.getItem('problemspace-ai-model') || 'gemini-2.0-flash' : 'gemini-2.0-flash';
-  const hasKey = !!geminiKey;
+  const anthropicKey = typeof window !== 'undefined' ? localStorage.getItem('problemspace-anthropic-api-key') || '' : '';
+  const universalApiKey = typeof window !== 'undefined' ? localStorage.getItem('problemspace-universal-api-key') || '' : '';
+  const aiModelId = typeof window !== 'undefined' ? localStorage.getItem('problemspace-ai-model') || 'gemini-2.0-flash' : 'gemini-2.0-flash';
+  
+  // Determine active key name and status
+  const isClaude = aiModelId.startsWith('claude-');
+  const isUniversal = aiModelId === 'universal';
+  
+  const activeKeyName = isUniversal ? "Universal API Key" : (isClaude ? "Anthropic API Key" : "Gemini API Key");
+  const hasActiveKey = isUniversal ? !!universalApiKey : (isClaude ? !!anthropicKey : !!geminiKey);
+
+  // Find model name from registry
+  const modelName = MODELS.find(m => m.id === aiModelId)?.name || 'Gemini 2.0 Flash';
+  const providerColor = isUniversal ? 'var(--color-sage)' : (isClaude ? 'var(--color-lavender)' : 'var(--color-amber)');
 
   const calcPos = useCallback(() => {
     if (triggerRef.current) {
@@ -129,26 +141,26 @@ export default function UserProfileDropdown({ onOpenSettings, onOpenSetup }: Use
         <div style={styles.row}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Key style={{ width: 13, height: 13, color: styles.textMuted }} />
-            <span style={{ fontSize: 11, fontWeight: 500, color: styles.textPrimary }}>Gemini API Key</span>
+            <span style={{ fontSize: 11, fontWeight: 500, color: styles.textPrimary }}>{activeKeyName}</span>
           </div>
-          {hasKey
+          {hasActiveKey
             ? <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                <CheckCircle2 style={{ width: 13, height: 13, color: 'var(--color-sage)' }} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-sage)' }}>Active</span>
-              </div>
+              <CheckCircle2 style={{ width: 13, height: 13, color: 'var(--color-sage)' }} />
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-sage)' }}>Active</span>
+            </div>
             : <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                <AlertCircle style={{ width: 13, height: 13, color: 'var(--color-amber)' }} />
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-amber)' }}>Not Set</span>
-              </div>
+              <AlertCircle style={{ width: 13, height: 13, color: 'var(--color-amber)' }} />
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-amber)' }}>Not Set</span>
+            </div>
           }
         </div>
 
         <div style={{ ...styles.row, marginBottom: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Sparkles style={{ width: 13, height: 13, color: 'var(--color-lavender)' }} />
-            <span style={{ fontSize: 11, fontWeight: 500, color: styles.textPrimary }}>Active Model</span>
+            <span style={{ fontSize: 11, fontWeight: 500, color: styles.textPrimary }}>Active Engine</span>
           </div>
-          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-lavender)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{aiModel}</span>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-lavender)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{modelName}</span>
         </div>
       </div>
 
@@ -156,36 +168,18 @@ export default function UserProfileDropdown({ onOpenSettings, onOpenSetup }: Use
       <div style={styles.actions}>
         {onOpenSettings && (
           <button
-            id="profile-open-settings"
+            id="profile-intelligence-hub"
             onClick={() => { setIsOpen(false); onOpenSettings(); }}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, cursor: 'pointer', background: 'transparent', border: 'none', marginBottom: 2 }}
             onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-cream-warm)')}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
-            <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'var(--color-lavender-light)', border: '1px solid var(--color-lavender)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}>
-              <Settings style={{ width: 13, height: 13, color: 'var(--color-ink)' }} />
+            <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'var(--color-lavender-light)', border: '1px solid var(--color-lavender)', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}>
+              <Database style={{ width: 13, height: 13, color: 'var(--color-ink)' }} />
             </div>
             <div style={{ textAlign: 'left' }}>
-              <p style={{ fontSize: 11, fontWeight: 600, color: styles.textPrimary, marginBottom: 1 }}>Intelligence Settings</p>
-              <p style={{ fontSize: 10, color: styles.textMuted }}>API keys, model, memory config</p>
-            </div>
-          </button>
-        )}
-
-        {onOpenSetup && (
-          <button
-            id="profile-open-setup"
-            onClick={() => { setIsOpen(false); onOpenSetup(); }}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, cursor: 'pointer', background: 'transparent', border: 'none', marginBottom: 2 }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-cream-warm)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-          >
-            <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'var(--color-sky-light)', border: '1px solid var(--color-sky)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s ease' }}>
-              <Target style={{ width: 13, height: 13, color: 'var(--color-ink)' }} />
-            </div>
-            <div style={{ textAlign: 'left' }}>
-              <p style={{ fontSize: 11, fontWeight: 600, color: styles.textPrimary, marginBottom: 1 }}>Setup Workspace</p>
-              <p style={{ fontSize: 10, color: styles.textMuted }}>Tune reasoning vs speed</p>
+              <p style={{ fontSize: 11, fontWeight: 600, color: styles.textPrimary, marginBottom: 1 }}>Intelligence Hub</p>
+              <p style={{ fontSize: 10, color: styles.textMuted }}>Models, keys & memory config</p>
             </div>
           </button>
         )}

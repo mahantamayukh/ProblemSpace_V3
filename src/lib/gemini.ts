@@ -139,6 +139,45 @@ async function callClaudeAPI(
 
 // ─── UNIVERSAL (OPENAI-COMPATIBLE) API INTEGRATION ───────────────────────
 
+/**
+ * Recursively converts Gemini schema (with uppercase Type enums) 
+ * to OpenAI-compatible JSON schema (with lowercase string types).
+ */
+function convertGeminiToOpenAISchema(schema: any): any {
+  if (!schema) return schema;
+
+  const typeMap: Record<string, string> = {
+    [Type.STRING]: 'string',
+    [Type.NUMBER]: 'number',
+    [Type.INTEGER]: 'integer',
+    [Type.BOOLEAN]: 'boolean',
+    [Type.OBJECT]: 'object',
+    [Type.ARRAY]: 'array'
+  };
+
+  const newSchema: any = { ...schema };
+
+  // Convert Type enum to lowercase string
+  if (schema.type) {
+    newSchema.type = typeMap[schema.type] || String(schema.type).toLowerCase();
+  }
+
+  // Recurse into properties
+  if (schema.properties) {
+    newSchema.properties = Object.keys(schema.properties).reduce((acc: any, key) => {
+      acc[key] = convertGeminiToOpenAISchema(schema.properties[key]);
+      return acc;
+    }, {});
+  }
+
+  // Recurse into items
+  if (schema.items) {
+    newSchema.items = convertGeminiToOpenAISchema(schema.items);
+  }
+
+  return newSchema;
+}
+
 async function callUniversalAPI(
   model: string,
   messages: any[],
@@ -147,13 +186,24 @@ async function callUniversalAPI(
   apiKey?: string,
   customBaseUrl?: string
 ) {
-  const keyToUse = apiKey || (typeof window !== 'undefined' ? localStorage.getItem('problemspace-user-api-key') : null) || "missing-key";
+  // Use dedicated universal key fallback
+  const keyToUse = apiKey || (typeof window !== 'undefined' ? localStorage.getItem('problemspace-universal-api-key') : null) || "missing-key";
   const baseUrl = customBaseUrl || (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-base-url') : null) || "https://api.openai.com/v1";
 
-  let universalMessages = messages.map(msg => ({
-    role: msg.role === 'model' ? 'assistant' : 'user',
-    content: typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : (msg.text || "")
-  }));
+  const trimmedModel = model.trim();
+  const trimmedBaseUrl = (customBaseUrl || "").trim() || "https://api.openai.com/v1";
+
+  let universalMessages = messages.map(msg => {
+    const role = msg.role === 'model' ? 'assistant' : 'user';
+    const textPart = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : (msg.text || "");
+    
+    // OpenAI-compatible APIs (like Mistral/Groq) reject assistant messages with empty content.
+    // We provide a subtle fallback if the message was purely a tool call with no text.
+    return {
+      role,
+      content: (role === 'assistant' && !textPart) ? "[Action recorded]" : textPart
+    };
+  }).filter(msg => msg.content && msg.content.trim().length > 0);
 
   if (universalMessages.length > 0 && universalMessages[0].role === 'assistant') {
     universalMessages.shift();
@@ -175,27 +225,12 @@ async function callUniversalAPI(
     function: {
       name: fd.name,
       description: fd.description,
-      parameters: {
-        type: "object",
-        properties: Object.keys(fd.parameters.properties).reduce((acc: any, key) => {
-          const prop = fd.parameters.properties[key];
-          acc[key] = {
-            type: prop.type === Type.ARRAY ? 'array' :
-              (prop.type === Type.OBJECT ? 'object' :
-                (prop.type === Type.NUMBER ? 'number' :
-                  (prop.type === Type.BOOLEAN ? 'boolean' : 'string'))),
-            description: prop.description,
-            items: prop.items ? (prop.items.type === Type.OBJECT ? { type: 'object', properties: prop.items.properties, required: prop.items.required } : { type: 'string' }) : undefined
-          };
-          return acc;
-        }, {}),
-        required: fd.parameters.required || []
-      }
+      parameters: convertGeminiToOpenAISchema(fd.parameters)
     }
   })) : []);
 
   const payload: any = {
-    model: model === 'universal' ? (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-model-name') || 'gpt-4o' : 'gpt-4o') : model,
+    model: trimmedModel === 'universal' ? (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-model-name') || 'gpt-4o' : 'gpt-4o') : trimmedModel,
     messages: universalMessages,
     temperature: 0.7
   };
@@ -206,7 +241,7 @@ async function callUniversalAPI(
   }
 
   try {
-    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
+    const response = await fetch(`${trimmedBaseUrl.replace(/\/$/, '')}/chat/completions`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${keyToUse}`,
@@ -217,7 +252,8 @@ async function callUniversalAPI(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Universal API Error: ${errorData.error?.message || response.statusText}`);
+      const errorMsg = errorData.error?.message || errorData.message || response.statusText || "Unknown Error";
+      throw new Error(`Universal API Error [${response.status}]: ${errorMsg}`);
     }
 
     const data = await response.json();
@@ -235,7 +271,61 @@ async function callUniversalAPI(
     };
   } catch (err: any) {
     console.error("Universal API failure:", err);
+    // If it's a TypeError, it's likely a network error or CORS issue
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      throw new Error(`Universal API Error: Connection failed. Please check the Base URL (${trimmedBaseUrl}) and your internet connection. (CORS might also be blocking the request)`);
+    }
     throw err;
+  }
+}
+
+/**
+ * Performs a minimalist 'diagnostic' call to verify API credentials
+ */
+export async function testAIConnection(config: {
+  model: string;
+  geminiKey?: string;
+  anthropicKey?: string;
+  universalKey?: string;
+  customBaseUrl?: string;
+  customModelName?: string;
+}) {
+  const isClaude = config.model.startsWith('claude-');
+  const isUniversal = config.model === 'universal';
+
+  try {
+    if (isClaude) {
+      await callClaudeAPI(
+        config.model, 
+        [{ role: 'user', parts: [{ text: 'ping' }] }], 
+        'Respond only with "pong".',
+        [],
+        config.anthropicKey
+      );
+    } else if (isUniversal) {
+      await callUniversalAPI(
+        config.customModelName || 'gpt-4o',
+        [{ role: 'user', parts: [{ text: 'ping' }] }],
+        'Respond only with "pong".',
+        [],
+        config.universalKey,
+        config.customBaseUrl
+      );
+    } else {
+      await callGemini(
+        config.model,
+        [{ role: 'user', parts: [{ text: 'ping' }] }],
+        { systemInstruction: 'Respond only with "pong".' },
+        config.geminiKey
+      );
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error("Diagnostic Connection Test Failed:", err);
+    return { 
+      success: false, 
+      error: err.message || "Unknown Connection Error"
+    };
   }
 }
 
@@ -550,7 +640,8 @@ export async function generateNodeRefinementResponse(
   anthropicApiKey?: string,
   oauthToken?: string,
   customBaseUrl?: string,
-  customModelName?: string
+  customModelName?: string,
+  universalApiKey?: string
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
@@ -583,7 +674,7 @@ export async function generateNodeRefinementResponse(
       newHistory: [...history, { role: 'user', parts: [{ text: cleanMessage }] }, response.candidates?.[0]?.content].filter(Boolean)
     };
   } else if (isUniversal) {
-    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, apiKey, customBaseUrl);
+    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, universalApiKey, customBaseUrl);
     if (response.functionCalls) {
       for (const call of response.functionCalls) {
         if (call.name === "updateNode") onNodeUpdate(call.args);
@@ -628,7 +719,8 @@ export async function generateNextResponse(
   anthropicApiKey?: string,
   oauthToken?: string,
   customBaseUrl?: string,
-  customModelName?: string
+  customModelName?: string,
+  universalApiKey?: string
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
@@ -650,7 +742,7 @@ export async function generateNextResponse(
       newHistory: [...history, { role: 'user', parts: [{ text: cleanMessage }] }, response.candidates?.[0]?.content].filter(Boolean)
     };
   } else if (isUniversal) {
-    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, apiKey, customBaseUrl);
+    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, universalApiKey, customBaseUrl);
     if (response.functionCalls) {
       for (const call of response.functionCalls) {
         if (call.name === "addBoardItems") onBoardUpdate(call.args);
@@ -687,7 +779,8 @@ export async function generatePersonaResponse(
   anthropicApiKey?: string,
   oauthToken?: string,
   customBaseUrl?: string,
-  customModelName?: string
+  customModelName?: string,
+  universalApiKey?: string
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
@@ -715,7 +808,7 @@ Rules: Be authentic. Anti-sycophancy mode active. Protect context. First-person 
       newHistory: [...history, { role: 'user', parts: [{ text: newMessage }] }, response.candidates?.[0]?.content].filter(Boolean)
     };
   } else if (isUniversal) {
-    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, apiKey, customBaseUrl);
+    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, universalApiKey, customBaseUrl);
     if (response.functionCalls) {
       for (const call of response.functionCalls) {
         if (call.name === "addBoardItems") onBoardUpdate(call.args);
@@ -747,7 +840,8 @@ export async function flipFailureNodes(
   anthropicApiKey?: string,
   oauthToken?: string,
   customBaseUrl?: string,
-  customModelName?: string
+  customModelName?: string,
+  universalApiKey?: string
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
@@ -765,7 +859,7 @@ export async function flipFailureNodes(
     }
     return response.text;
   } else if (isUniversal) {
-    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, apiKey, customBaseUrl);
+    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, universalApiKey, customBaseUrl);
     if (response.functionCalls) {
       for (const call of response.functionCalls) {
         if (call.name === "addBoardItems") onBoardUpdate(call.args);
@@ -791,7 +885,8 @@ export async function scanSignal(
   anthropicApiKey?: string,
   oauthToken?: string,
   customBaseUrl?: string,
-  customModelName?: string
+  customModelName?: string,
+  universalApiKey?: string
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
@@ -822,7 +917,7 @@ IMPORTANT: You MUST call addBoardItems with at least 5 nodes. This is required e
     }
     return response.text || `Scanned "${query}" — check your canvas for new nodes.`;
   } else if (isUniversal) {
-    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, functionTools, apiKey, customBaseUrl);
+    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, functionTools, universalApiKey, customBaseUrl);
     if (response.functionCalls) {
       for (const call of response.functionCalls) {
         if (call.name === "addBoardItems") onBoardUpdate(call.args);
@@ -862,7 +957,8 @@ export async function synthesizeInterviewsToNode(
   anthropicApiKey?: string,
   oauthToken?: string,
   customBaseUrl?: string,
-  customModelName?: string
+  customModelName?: string,
+  universalApiKey?: string
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
@@ -875,7 +971,7 @@ export async function synthesizeInterviewsToNode(
     onNodeUpdate({ label: personaLabel, details: `[RESEARCH SYNTHESIS]\n\n${response.text}` });
     return response.text;
   } else if (isUniversal) {
-    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, [], apiKey, customBaseUrl);
+    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, [], universalApiKey, customBaseUrl);
     const synthesized = response.text || 'Synthesis failed.';
     onNodeUpdate({ label: personaLabel, details: `[RESEARCH SYNTHESIS]\n\n${synthesized}` });
     return synthesized;
@@ -895,7 +991,8 @@ export async function generateSessionSummary(
   anthropicApiKey?: string,
   oauthToken?: string,
   customBaseUrl?: string,
-  customModelName?: string
+  customModelName?: string,
+  universalApiKey?: string
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
@@ -906,7 +1003,7 @@ export async function generateSessionSummary(
     const response = await callClaudeAPI(modelName, contents, instruction, [], anthropicApiKey);
     return response.text;
   } else if (isUniversal) {
-    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, [], apiKey, customBaseUrl);
+    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, [], universalApiKey, customBaseUrl);
     return response.text || 'Summary failed.';
   } else {
     const response = await callGemini(modelName, contents, { systemInstruction: instruction, temperature: 0.3 }, apiKey, oauthToken);
@@ -923,7 +1020,8 @@ export async function synthesizeTargetNode(
   anthropicApiKey?: string,
   oauthToken?: string, // kept for signature compatibility
   customBaseUrl?: string,
-  customModelName?: string
+  customModelName?: string,
+  universalApiKey?: string
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
@@ -945,7 +1043,7 @@ export async function synthesizeTargetNode(
     }
     return response.text;
   } else if (isUniversal) {
-    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, apiKey, customBaseUrl);
+    const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, universalApiKey, customBaseUrl);
     if (response.functionCalls) {
       for (const call of response.functionCalls) {
         if (call.name === "updateNode") onNodeUpdate(call.args);
