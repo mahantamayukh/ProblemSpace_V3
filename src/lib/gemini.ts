@@ -341,7 +341,7 @@ const ALL_NODE_TYPES = [
 
 export const addBoardItemsDeclaration: FunctionDeclaration = {
   name: "addBoardItems",
-  description: "Extracts key concepts from the conversation and adds them as NEW nodes to the visual board. Call this when new insights, problems, audiences, constraints etc. are discovered. DEDUPLICATION: Check the existing board nodes before calling this. If a node with similar info exists, DO NOT create it. TYPE DIVERSITY: Use a variety of node types (e.g., hmw, rose, metric, journey-step) to make the board more strategic.",
+  description: "Extracts key concepts from the conversation and adds them as NEW nodes to the visual board. Call this when new insights, problems, audiences, constraints etc. are discovered. BREVITY: Keep 'details' extremely short (2-3 sentences max). DEDUPLICATION: Check the existing board nodes before calling this. If a node with similar info exists, DO NOT create it. TYPE DIVERSITY: Use a variety of node types (e.g., hmw, rose, metric, journey-step) to make the board more strategic.",
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -447,7 +447,7 @@ MEMORY CONSOLIDATION RULES:
 6. **Critical Growth (Score >= 7)**: Only create or update dedicated individual nodes for High-Impact insights (importance >= 7).
 
 Strategic Principles:
-- **BREVITY & CONCISION**: Be extremely concise. Your chat responses should be under 150 words. Offload ALL detailed descriptions to the Workspace or Neural Memory nodes. 
+- **BREVITY & CONCISION**: Be extremely concise. Your chat responses should be under 150 words. ALL node descriptions on the board MUST be short (2-3 sentences max). Avoid long paragraphs on cards.
 - **DEDUPLICATION**: NEVER create a node that duplicates information already present on the board. If an idea is similar to an existing node, either reference the existing one in chat or suggest an update if necessary.
 - **TYPE DIVERSITY**: Use the full range of node types (${ALL_NODE_TYPES.join(', ')}). Don't just use 'insight' and 'problem'. Match the type to the strategic intent (e.g., 'metric' for KPIs, 'hmw' for questions).
 - Use the chat for **Facilitation** and **Strategic Guidance**, not for dumping information.
@@ -1051,7 +1051,7 @@ export async function synthesizeTargetNode(
   if (sourceNodes.length === 0) return;
 
   const sourcesText = sourceNodes.map(n => `[${n.type}] ${n.data.label}: ${n.data.details || ''}`).join('\n\n');
-  const instruction = `You are a design synthesizer. Multiple source concepts are pointing into the target node. Analyze all incoming sources and rewrite the target node's content to perfectly synthesize their intersection.\n\nIncoming Sources:\n${sourcesText}\n\nCurrent Target Node:\n[${targetNode.type}] ${targetNode.data.label}\n\nUse the updateNode tool to completely rewrite the Target Node based on the synthesis of the sources.`;
+  const instruction = `You are a design synthesizer. Multiple source concepts are pointing into the target node. Analyze all incoming sources and rewrite the target node's content to perfectly synthesize their intersection.\n\nIncoming Sources:\n${sourcesText}\n\nCurrent Target Node:\n[${targetNode.type}] ${targetNode.data.label}\n\nIMPORTANT: Keep the output extremely CONCISE and punchy. The 'details' section must NOT exceed 3 short sentences or a few high-impact bullet points. Avoid long paragraphs. Use the updateNode tool to completely rewrite the Target Node based on the synthesis of the sources.`;
 
   const tools = [{ functionDeclarations: [updateNodeDeclaration] }];
   const contents = [{ role: 'user', parts: [{ text: "Synthesize the connected nodes into the target node." }] }];
