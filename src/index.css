@@ -120,14 +120,33 @@ body,
   box-shadow: var(--shadow-soft) !important;
 }
 
-.dark .react-flow__controls-button {
-  background-color: var(--color-cream) !important;
-  border-color: var(--color-border) !important;
-  fill: var(--color-ink) !important;
-}
-
 .dark .react-flow__controls-button:hover {
   background-color: var(--color-cream-warm) !important;
+}
+
+/* Fix for default white node backgrounds in React Flow */
+.react-flow__node {
+  background: transparent !important;
+  border-radius: 12px !important;
+}
+
+.react-flow__handle {
+  border-color: var(--color-border) !important;
+  background-color: var(--color-cream) !important;
+}
+
+.react-flow__edge-path {
+  stroke: var(--color-border) !important;
+  stroke-width: 2 !important;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--color-lavender) !important;
+}
+
+.react-flow__node.selected {
+  outline: 2px solid var(--color-lavender) !important;
+  box-shadow: 0 0 15px var(--color-lavender-light) !important;
 }
 
 /* ── Premium Utilities ──────────────────────────────────────────────── */

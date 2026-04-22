@@ -14,6 +14,7 @@ import IntelligenceHubModal from './components/IntelligenceHubModal';
 import SummaryEditModal from './components/SummaryEditModal';
 import { PromptInputBox } from './components/ui/ai-prompt-box';
 import { useSprintState } from './hooks/useSprintState';
+import { usePersistence } from './hooks/usePersistence';
 import { NODE_TYPE_LABELS } from './components/nodes/CustomNodes';
 import { AnimatePresence, motion } from 'framer-motion';
 import ConstraintPanel, { Constraint } from './components/ConstraintPanel';
@@ -133,31 +134,6 @@ export default function App() {
   const [localDetails, setLocalDetails] = useState('');
   const [isNodeEditDirty, setIsNodeEditDirty] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('problemspace-constraints-v1', JSON.stringify(constraints));
-          localStorage.setItem('problemspace-user-api-key', userApiKey);
-          localStorage.setItem('problemspace-anthropic-api-key', anthropicApiKey);
-          localStorage.setItem('problemspace-session-summary-v1', sessionSummary);
-          localStorage.setItem('problemspace-summary-freq', summaryFrequency.toString());
-          localStorage.setItem('problemspace-ai-model', aiModel);
-          localStorage.setItem('problemspace-custom-base-url', customBaseUrl);
-          localStorage.setItem('problemspace-custom-model-name', customModelName);
-          localStorage.setItem('problemspace-universal-api-key', universalApiKey);
-          localStorage.setItem('problemspace-chat-messages', JSON.stringify(messages));
-          localStorage.setItem('problemspace-chat-history', JSON.stringify(history.slice(-20)));
-          localStorage.setItem('problemspace-interviews-v1', JSON.stringify(savedInterviews));
-        } catch (e: any) {
-          if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-            console.error("LocalStorage full! Progress may not be saved.");
-          }
-        }
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [constraints, userApiKey, anthropicApiKey, sessionSummary, summaryFrequency, aiModel, customBaseUrl, customModelName, messages, history, savedInterviews]);
 
   // Auto-open Settings after login if required API key is missing for current provider
   useEffect(() => {
@@ -214,15 +190,6 @@ export default function App() {
   const [boardNodesSnapshot, setBoardNodesSnapshot] = useState<any[]>(initialBoard.nodes);
   const [boardEdgesSnapshot, setBoardEdgesSnapshot] = useState<any[]>(initialBoard.edges);
 
-  // Continually save boards to local storage on change
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('problemspace-project-boards-v4', JSON.stringify(projectBoards));
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [projectBoards]);
 
   // Synchronize snapshots back to active board state on a slight denounce (so we don't block too hard)
   useEffect(() => {
@@ -412,7 +379,30 @@ export default function App() {
   const clearUpdatedEdge = useCallback(() => setUpdatedEdge(null), []);
   const [deletedEdgeId, setDeletedEdgeId] = useState<string | undefined>(undefined);
 
-  // Synchronize Refinement Panel (Sidebar) with Board updates (e.g. from AI)
+  // Responsive Window Size Tracking
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  usePersistence({
+    constraints,
+    userApiKey,
+    anthropicApiKey,
+    sessionSummary,
+    summaryFrequency,
+    aiModel,
+    customBaseUrl,
+    customModelName,
+    universalApiKey,
+    messages,
+    history,
+    savedInterviews,
+    projectBoards
+  });
+
   useEffect(() => {
     if (selectedNode) {
       // Find the actual current state of this node on the board
@@ -1250,14 +1240,33 @@ export default function App() {
         />
 
         {/* Node Focus Panel */}
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout">
           {selectedNode && (
+            /* Mobile Backdrop */
             <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: isRightCollapsed ? 64 : 400, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ type: 'tween', duration: 0.3, ease: 'easeInOut' }}
-              className="h-full bg-[var(--color-cream)] border-l border-[var(--color-border)] shadow-xl z-30 flex flex-col overflow-hidden shrink-0"
+              key="sidebar-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedNode(null)}
+              className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-20 md:hidden"
+            />
+          )}
+          {selectedNode && (
+            /* Sidebar Content */
+            <motion.div
+              key="sidebar-panel"
+              initial={{ x: '100%', opacity: 0 }}
+              animate={{ 
+                x: 0, 
+                opacity: 1,
+                width: isRightCollapsed 
+                  ? (windowWidth < 768 ? '0px' : '64px') 
+                  : (windowWidth < 768 ? '100%' : '400px')
+              }}
+              exit={{ x: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className={`fixed md:relative inset-y-0 right-0 h-full bg-[var(--color-cream)] border-l border-[var(--color-border)] shadow-2xl md:shadow-xl z-30 flex flex-col overflow-hidden shrink-0 ${isRightCollapsed ? 'w-0 md:w-16' : 'w-[85%] sm:w-[400px] md:w-[400px]'}`}
             >
               {isRightCollapsed ? (
                 <div className="w-[64px] h-full flex flex-col items-center py-4 gap-6">

@@ -562,8 +562,13 @@ function buildSystemInstruction(phase: number, exerciseId: string | null, custom
   let instruction = BASE_INSTRUCTION + "\n\n";
 
   if (aiMemory && aiMemory.nodes.length > 0) {
-    instruction += `### YOUR NEURAL MEMORY (Structured Context)\n`;
-    aiMemory.nodes.forEach(n => {
+    const memoryLimit = 10;
+    const activeMemory = aiMemory.nodes.slice(-memoryLimit);
+    
+    instruction += `### YOUR NEURAL MEMORY (Active Context Hub)\n`;
+    instruction += `(Note: You only have access to the ${activeMemory.length} most relevant/recent nodes for token efficiency. If a key memory is missing, ask the user to 'pin' it or update the Memory Board.)\n`;
+    
+    activeMemory.forEach(n => {
       instruction += `- [MEMORY:${n.id}] ${n.data.label}: ${n.data.details}\n`;
     });
     instruction += `\n`;

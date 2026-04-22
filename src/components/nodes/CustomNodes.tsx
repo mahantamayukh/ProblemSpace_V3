@@ -38,23 +38,23 @@ const AutoResizeTextarea = ({ value, onBlur, className, placeholder, rows = 1, r
 };
 
 const nodeStyles = {
-  problem: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-900', icon: Target, iconColor: 'text-blue-600', darkBg: 'dark:bg-blue-950/40' },
-  insight: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-900', icon: Lightbulb, iconColor: 'text-purple-600', darkBg: 'dark:bg-purple-950/40' },
-  audience: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-900', icon: User, iconColor: 'text-emerald-600', darkBg: 'dark:bg-emerald-950/40' },
-  constraint: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-900', icon: AlertTriangle, iconColor: 'text-amber-600', darkBg: 'dark:bg-amber-950/40' },
-  sticky: { bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-900', icon: StickyNote, iconColor: 'text-yellow-600', darkBg: 'dark:bg-yellow-950/40' },
-  hmw: { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-900', icon: HelpCircle, iconColor: 'text-cyan-600', darkBg: 'dark:bg-cyan-950/40' },
-  rose: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-900', icon: Flower2, iconColor: 'text-rose-500', darkBg: 'dark:bg-rose-950/40' },
-  thorn: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-900', icon: AlertOctagon, iconColor: 'text-red-600', darkBg: 'dark:bg-red-950/40' },
-  bud: { bg: 'bg-lime-50', border: 'border-lime-200', text: 'text-lime-900', icon: Sprout, iconColor: 'text-lime-600', darkBg: 'dark:bg-lime-950/40' },
-  competitor: { bg: 'bg-slate-50', border: 'border-slate-300', text: 'text-slate-900', icon: Swords, iconColor: 'text-slate-600', darkBg: 'dark:bg-slate-950/40' },
-  'journey-step': { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-900', icon: Footprints, iconColor: 'text-indigo-600', darkBg: 'dark:bg-indigo-950/40' },
-  principle: { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-900', icon: Compass, iconColor: 'text-teal-600', darkBg: 'dark:bg-teal-950/40' },
-  metric: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-900', icon: BarChart3, iconColor: 'text-orange-600', darkBg: 'dark:bg-orange-950/40' },
-  tweet: { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-900', icon: MessageCircle, iconColor: 'text-sky-600', darkBg: 'dark:bg-sky-950/40' },
-  failure: { bg: 'bg-red-100', border: 'border-red-400', text: 'text-red-900', icon: AlertOctagon, iconColor: 'text-red-600', darkBg: 'dark:bg-red-950/40' },
-  signal: { bg: 'bg-violet-100', border: 'border-violet-300', text: 'text-violet-900', icon: Sparkles, iconColor: 'text-violet-600', darkBg: 'dark:bg-violet-950/40' },
-  memory: { bg: 'bg-fuchsia-500/10', border: 'border-fuchsia-500', text: 'text-fuchsia-100', icon: Brain, iconColor: 'text-fuchsia-400', darkBg: 'dark:bg-fuchsia-950/40' },
+  problem: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-900', icon: Target, iconColor: 'text-blue-600', darkBg: 'dark:bg-blue-950/40', darkText: 'dark:text-blue-300', darkIcon: 'dark:text-blue-400' },
+  insight: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-900', icon: Lightbulb, iconColor: 'text-purple-600', darkBg: 'dark:bg-purple-950/40', darkText: 'dark:text-purple-300', darkIcon: 'dark:text-purple-400' },
+  audience: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-900', icon: User, iconColor: 'text-emerald-600', darkBg: 'dark:bg-emerald-950/40', darkText: 'dark:text-emerald-300', darkIcon: 'dark:text-emerald-400' },
+  constraint: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-900', icon: AlertTriangle, iconColor: 'text-amber-600', darkBg: 'dark:bg-amber-950/40', darkText: 'dark:text-amber-300', darkIcon: 'dark:text-amber-400' },
+  sticky: { bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-900', icon: StickyNote, iconColor: 'text-yellow-600', darkBg: 'dark:bg-yellow-950/40', darkText: 'dark:text-yellow-200', darkIcon: 'dark:text-yellow-400' },
+  hmw: { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-900', icon: HelpCircle, iconColor: 'text-cyan-600', darkBg: 'dark:bg-cyan-950/40', darkText: 'dark:text-cyan-300', darkIcon: 'dark:text-cyan-400' },
+  rose: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-900', icon: Flower2, iconColor: 'text-rose-500', darkBg: 'dark:bg-rose-950/40', darkText: 'dark:text-rose-300', darkIcon: 'dark:text-rose-400' },
+  thorn: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-900', icon: AlertOctagon, iconColor: 'text-red-600', darkBg: 'dark:bg-red-950/40', darkText: 'dark:text-red-300', darkIcon: 'dark:text-red-400' },
+  bud: { bg: 'bg-lime-50', border: 'border-lime-200', text: 'text-lime-900', icon: Sprout, iconColor: 'text-lime-600', darkBg: 'dark:bg-lime-950/40', darkText: 'dark:text-lime-300', darkIcon: 'dark:text-lime-400' },
+  competitor: { bg: 'bg-slate-50', border: 'border-slate-300', text: 'text-slate-900', icon: Swords, iconColor: 'text-slate-600', darkBg: 'dark:bg-slate-950/40', darkText: 'dark:text-slate-300', darkIcon: 'dark:text-slate-400' },
+  'journey-step': { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-900', icon: Footprints, iconColor: 'text-indigo-600', darkBg: 'dark:bg-indigo-950/40', darkText: 'dark:text-indigo-300', darkIcon: 'dark:text-indigo-400' },
+  principle: { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-900', icon: Compass, iconColor: 'text-teal-600', darkBg: 'dark:bg-teal-950/40', darkText: 'dark:text-teal-300', darkIcon: 'dark:text-teal-400' },
+  metric: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-900', icon: BarChart3, iconColor: 'text-orange-600', darkBg: 'dark:bg-orange-950/40', darkText: 'dark:text-orange-300', darkIcon: 'dark:text-orange-400' },
+  tweet: { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-900', icon: MessageCircle, iconColor: 'text-sky-600', darkBg: 'dark:bg-sky-950/40', darkText: 'dark:text-sky-300', darkIcon: 'dark:text-sky-400' },
+  failure: { bg: 'bg-red-100', border: 'border-red-400', text: 'text-red-900', icon: AlertOctagon, iconColor: 'text-red-600', darkBg: 'dark:bg-red-950/40', darkText: 'dark:text-red-300', darkIcon: 'dark:text-red-400' },
+  signal: { bg: 'bg-violet-100', border: 'border-violet-300', text: 'text-violet-900', icon: Sparkles, iconColor: 'text-violet-600', darkBg: 'dark:bg-violet-950/40', darkText: 'dark:text-violet-300', darkIcon: 'dark:text-violet-400' },
+  memory: { bg: 'bg-fuchsia-500/10', border: 'border-fuchsia-500', text: 'text-fuchsia-100', icon: Brain, iconColor: 'text-fuchsia-400', darkBg: 'dark:bg-fuchsia-950/40', darkText: 'dark:text-fuchsia-300', darkIcon: 'dark:text-fuchsia-400' },
 };
 
 const typeLabels: Record<string, string> = {
@@ -155,12 +155,12 @@ export function DetectiveNode({ id, data, type, selected }: any) {
             style={customColor ? { backgroundColor: `${customColor}20` } : {}}
           >
             <Icon
-              className={`w-3.5 h-3.5 ${customColor ? '' : style.iconColor} dark:text-opacity-90`}
+              className={`w-3.5 h-3.5 ${customColor ? '' : `${style.iconColor} ${style.darkIcon}`}`}
               style={customColor ? { color: customColor } : {}}
             />
           </div>
           <div
-            className={`text-[10px] font-semibold tracking-wide ${customColor ? '' : style.iconColor} dark:text-opacity-90`}
+            className={`text-[10px] font-semibold tracking-wide ${customColor ? '' : `${style.iconColor} ${style.darkText}`}`}
             style={customColor ? { color: customColor } : {}}
           >
             {label}
@@ -225,7 +225,7 @@ export function MemoryNode({ data }: any) {
         </div>
         <div className="flex flex-col">
           <div className="text-[10px] font-semibold tracking-wide text-fuchsia-300">Neural Memory</div>
-          <div className="text-[8px] font-medium text-fuchsia-500/60">Read-Only AI Context</div>
+          <div className="text-[8px] font-medium text-fuchsia-400/60">Read-Only AI Context</div>
         </div>
       </div>
 

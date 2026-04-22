@@ -25,15 +25,22 @@ import { useUndoRedo } from '../hooks/useUndoRedo';
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-const nodeWidth = 250;
-const nodeHeight = 150;
+const nodeWidth = 280;
+const nodeHeight = 200;
 
 const getLayoutedElements = (nodes: any[], edges: any[], direction = 'TB') => {
   const isHorizontal = direction === 'LR';
-  dagreGraph.setGraph({ rankdir: direction });
+  dagreGraph.setGraph({ 
+    rankdir: direction,
+    nodesep: 150, // More horizontal space between nodes
+    ranksep: 200, // More vertical space between layers
+    marginx: 50,
+    marginy: 50
+  });
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    // We use a slightly larger box for layout to ensure no overlaps
+    dagreGraph.setNode(node.id, { width: nodeWidth + 40, height: nodeHeight + 40 });
   });
 
   edges.forEach((edge) => {
@@ -553,6 +560,8 @@ function BoardInner({
         nodesDraggable={true}
         nodesConnectable={!isNeuralView}
         elementsSelectable={true}
+        minZoom={0.05}
+        maxZoom={4}
       >
         {isNeuralView && (
           <Panel position="top-right" className="m-6">

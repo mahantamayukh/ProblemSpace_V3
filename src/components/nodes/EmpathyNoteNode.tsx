@@ -32,11 +32,11 @@ const AutoResizeTextarea = ({ value, onBlur, className, placeholder, rows = 1, o
   );
 };
 
-const typeConfig: Record<string, { color: string; bg: string; icon: any }> = {
-  'empathy-says': { color: 'text-blue-700', bg: 'bg-blue-100', icon: MessageSquare },
-  'empathy-thinks': { color: 'text-purple-700', bg: 'bg-purple-100', icon: Brain },
-  'empathy-does': { color: 'text-green-700', bg: 'bg-green-100', icon: Activity },
-  'empathy-feels': { color: 'text-rose-700', bg: 'bg-rose-100', icon: Heart },
+const typeConfig: Record<string, { color: string; darkColor: string; bg: string; icon: any }> = {
+  'empathy-says': { color: 'text-blue-700', darkColor: 'dark:text-blue-300', bg: 'bg-blue-600', icon: MessageSquare },
+  'empathy-thinks': { color: 'text-purple-700', darkColor: 'dark:text-purple-300', bg: 'bg-purple-600', icon: Brain },
+  'empathy-does': { color: 'text-green-700', darkColor: 'dark:text-green-300', bg: 'bg-green-600', icon: Activity },
+  'empathy-feels': { color: 'text-rose-700', darkColor: 'dark:text-rose-300', bg: 'bg-rose-600', icon: Heart },
 };
 
 export function EmpathyNoteNode({ id, data, type, selected }: any) {
@@ -101,7 +101,7 @@ export function EmpathyNoteNode({ id, data, type, selected }: any) {
         <div className={`absolute inset-0 opacity-[0.06] pointer-events-none rounded-xl ${customColor ? '' : config.bg}`} />
         <div className={`absolute top-0 bottom-0 left-0 w-0.5 rounded-l-xl ${customColor ? '' : config.bg.replace('100', '400')} opacity-50`} style={{ backgroundColor: customColor }} />
 
-        <Icon className={`w-3.5 h-3.5 mb-2 ${customColor ? 'text-[var(--color-ink)]' : config.color}`} style={{ color: customColor }} />
+        <Icon className={`w-3.5 h-3.5 mb-2 ${customColor ? 'text-[var(--color-ink)]' : `${config.color} ${config.darkColor}`}`} style={{ color: customColor }} />
 
         <div className="font-semibold text-xs leading-tight mb-1 text-[var(--color-ink)] z-10 flex-1 nodrag">
           <AutoResizeTextarea
