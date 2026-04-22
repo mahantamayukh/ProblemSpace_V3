@@ -558,15 +558,8 @@ function BoardInner({
       {isNeuralView && (
         <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
           {/* Scanning line effect */}
-          <div className="absolute top-0 left-0 w-full h-[2px] bg-sky-400/30 blur-sm animate-[scan_4s_linear_infinite]" />
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-sky-400/30 blur-sm animate-scan" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(14,165,233,0.05)_100%)]" />
-
-          <style>{`
-            @keyframes scan {
-              0% { top: -10%; }
-              100% { top: 110%; }
-            }
-          `}</style>
         </div>
       )}
       <ReactFlow

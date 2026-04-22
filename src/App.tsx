@@ -217,6 +217,7 @@ export default function App() {
     const nextBoard = projectBoards.find(b => b.id === id);
     if (nextBoard) {
       setActiveBoardId(id);
+      setIsNeuralViewOpen(id === 'ai-memory'); // Sync the UI state
       setRestoreState({ nodes: nextBoard.nodes, edges: nextBoard.edges });
       setBoardNodesSnapshot(nextBoard.nodes);
       setBoardEdgesSnapshot(nextBoard.edges);
@@ -1281,7 +1282,7 @@ export default function App() {
             setBoardEdgesSnapshot(edges);
           }}
           onShowSummary={() => setShowSummary(true)}
-          isNeuralView={isNeuralViewOpen}
+          isNeuralView={activeBoardId === 'ai-memory'}
           universalApiKey={universalApiKey}
         />
 

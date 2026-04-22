@@ -174,3 +174,12 @@ body,
 .animate-shimmer {
   animation: shimmer 2s infinite;
 }
+
+@keyframes scan {
+  0% { top: -10%; }
+  100% { top: 110%; }
+}
+
+.animate-scan {
+  animation: scan 4s linear infinite;
+}
