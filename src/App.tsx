@@ -974,6 +974,15 @@ export default function App() {
 
               {/* Tools & Profile */}
               <div className="flex items-center gap-1 shrink-0">
+                {/* Mobile-Only Collapse Button */}
+                <button
+                  onClick={() => setIsLeftCollapsed(true)}
+                  className="lg:hidden w-10 h-10 mr-1 rounded-xl bg-[var(--color-cream-deep)] text-[var(--color-ink)] flex items-center justify-center transition-all border border-[var(--color-border)] active:scale-90"
+                  title="Close Chat"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+
                 <button
                   onClick={() => {
                     const nextId = isNeuralViewOpen ? 'default' : 'ai-memory';
@@ -985,31 +994,36 @@ export default function App() {
                 >
                   <NeuronIcon className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => setShowSignalScanner(true)}
-                  title="Signal Scanner (Market Intelligence)"
-                  className="w-8 h-8 rounded-lg hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)] flex items-center justify-center transition-all"
-                >
-                  <Link className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setIsDarkMode(!isDarkMode)}
-                  title="Toggle Light/Dark Mode"
-                  className="w-8 h-8 rounded-lg hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)] flex items-center justify-center transition-all"
-                >
-                  {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </button>
+                
+                {/* Hidden on small mobile to save space */}
+                <div className="hidden sm:flex items-center gap-1">
+                  <button
+                    onClick={() => setShowSignalScanner(true)}
+                    title="Signal Scanner (Market Intelligence)"
+                    className="w-8 h-8 rounded-lg hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)] flex items-center justify-center transition-all"
+                  >
+                    <Link className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setIsDarkMode(!isDarkMode)}
+                    title="Toggle Light/Dark Mode"
+                    className="w-8 h-8 rounded-lg hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)] flex items-center justify-center transition-all"
+                  >
+                    {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  </button>
+                </div>
 
-                <div className="mx-1.5 w-px h-5 bg-[var(--color-border)]" />
+                <div className="mx-1 w-px h-5 bg-[var(--color-border)]" />
 
                 <UserProfileDropdown
                   onOpenSettings={() => setIsIntelligenceHubOpen(true)}
                 />
 
+                {/* Desktop-Only Collapse Button */}
                 <button
                   onClick={() => setIsLeftCollapsed(true)}
                   title="Collapse Panel"
-                  className="w-8 h-8 ml-1 rounded-lg hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)] flex items-center justify-center transition-all"
+                  className="hidden lg:flex w-8 h-8 ml-1 rounded-lg hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)] items-center justify-center transition-all"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
