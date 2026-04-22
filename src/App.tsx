@@ -913,21 +913,49 @@ export default function App() {
       />
 
       {/* Chat Panel & Exercise Panel */}
-      <div className={`flex flex-col h-full shrink-0 border-r border-[var(--color-border)] bg-[var(--color-cream)] z-20 shadow-lg transition-all duration-300 ${isLeftCollapsed ? 'w-16 items-center py-4' : 'w-full lg:w-[400px] xl:w-[450px]'}`}>
+      <div className={`fixed lg:relative inset-y-0 left-0 flex flex-col h-full shrink-0 border-r border-[var(--color-border)] bg-[var(--color-cream)] z-30 shadow-lg transition-all duration-300 ${isLeftCollapsed ? 'w-0 lg:w-16 items-center py-4' : 'w-full lg:w-[400px] xl:w-[450px]'}`}>
+        <AnimatePresence>
+          {!isLeftCollapsed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsLeftCollapsed(true)}
+              className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[25] lg:hidden"
+            />
+          )}
+        </AnimatePresence>
+
         {isLeftCollapsed ? (
-          <div className="flex flex-col items-center gap-6 w-full h-full">
-            <button onClick={() => setIsLeftCollapsed(false)} className="w-10 h-10 border border-transparent hover:border-black dark:hover:border-white hover:shadow-sm  flex items-center justify-center transition-all">
-              <ChevronRight className="w-5 h-5 dark:text-white" />
-            </button>
-            <div className="w-10 h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-ink)] text-[var(--color-cream)] flex items-center justify-center shadow-sm  transition-all shrink-0">
-              <Sparkles className="w-5 h-5" />
+          <>
+            {/* Desktop Collapsed View */}
+            <div className="hidden lg:flex flex-col items-center gap-6 w-full h-full">
+              <button onClick={() => setIsLeftCollapsed(false)} className="w-10 h-10 border border-transparent hover:border-black dark:hover:border-white hover:shadow-sm  flex items-center justify-center transition-all">
+                <ChevronRight className="w-5 h-5 dark:text-white" />
+              </button>
+              <div className="w-10 h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-ink)] text-[var(--color-cream)] flex items-center justify-center shadow-sm  transition-all shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center opacity-30 select-none pointer-events-none">
+                <span className="[writing-mode:vertical-rl] rotate-180 font-black tracking-[0.3em] uppercase text-xl dark:text-white">
+                  ProblemSpace
+                </span>
+              </div>
             </div>
-            <div className="flex-1 flex flex-col items-center justify-center opacity-30 select-none pointer-events-none">
-              <span className="[writing-mode:vertical-rl] rotate-180 font-black tracking-[0.3em] uppercase text-xl dark:text-white">
-                ProblemSpace
-              </span>
+
+            {/* Mobile Floating Toggle */}
+            <div className="lg:hidden fixed bottom-6 left-6 z-[40]">
+              <motion.button
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                onClick={() => setIsLeftCollapsed(false)}
+                className="w-14 h-14 bg-[var(--color-ink)] text-[var(--color-cream)] rounded-full shadow-[var(--shadow-elevated)] flex items-center justify-center border-2 border-[var(--color-border)] active:scale-95 transition-transform"
+              >
+                <Sparkles className="w-6 h-6" />
+              </motion.button>
             </div>
-          </div>
+          </>
         ) : (
           <div className="flex flex-col h-full w-[100%] overflow-hidden">
             <div className="p-3 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-cream)] transition-colors shrink-0">
@@ -1184,7 +1212,7 @@ export default function App() {
       </div>
 
       {/* Board Panel Container */}
-      <div className="flex flex-col md:flex-row flex-1 relative overflow-hidden z-10">
+      <div className="flex flex-1 relative overflow-hidden z-10">
 
         <div className="absolute top-6 left-6 z-10 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border border-neutral-300 dark:border-neutral-700 shadow-xl flex items-center transition-all overflow-visible rounded-lg p-1 gap-1">
           {projectBoards.filter(b => b.id !== 'ai-memory').map(board => (
