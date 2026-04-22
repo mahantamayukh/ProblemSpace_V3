@@ -121,8 +121,23 @@ export function EmpathyNoteNode({ id, data, type, selected }: any) {
           />
         </div>
 
-        <Handle type="target" position={Position.Top} className="w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full focus:ring-0 opacity-0 group-hover:opacity-100 transition-opacity z-20 before:absolute before:w-[80px] before:h-[60px] before:-top-8 before:-left-[30px] before:content-['']" />
-        <Handle type="source" position={Position.Bottom} className="w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full focus:ring-0 opacity-0 group-hover:opacity-100 transition-opacity z-20 before:absolute before:w-[80px] before:h-[60px] before:-bottom-8 before:-left-[30px] before:content-['']" />
+        {/* Target Handles - All 4 Sides */}
+        <Handle type="target" position={Position.Top} id="t-top" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-30" />
+        <Handle type="target" position={Position.Bottom} id="t-bottom" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-30" />
+        <Handle type="target" position={Position.Left} id="t-left" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-30" />
+        <Handle type="target" position={Position.Right} id="t-right" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-30" />
+
+        {/* Source Handles - All 4 Sides */}
+        <Handle type="source" position={Position.Top} id="s-top" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-20" />
+        <Handle type="source" position={Position.Bottom} id="s-bottom" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-20" />
+        <Handle type="source" position={Position.Left} id="s-left" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-20" />
+        <Handle type="source" position={Position.Right} id="s-right" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-20" />
+
+        {/* Visible Interaction Points */}
+        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none" />
+        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none" />
+        <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none" />
+        <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none" />
       </div>
     </>
   );
