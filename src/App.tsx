@@ -1183,8 +1183,8 @@ export default function App() {
         )}
       </div>
 
-      {/* Board Panel Container (Flex column to hold header if needed, but here we use relative for the dashboard title) */}
-      <div className="hidden lg:flex flex-row flex-1 relative overflow-hidden z-10">
+      {/* Board Panel Container */}
+      <div className="flex flex-col md:flex-row flex-1 relative overflow-hidden z-10">
 
         <div className="absolute top-6 left-6 z-10 bg-white/90 dark:bg-neutral-900/90 backdrop-blur border border-neutral-300 dark:border-neutral-700 shadow-xl flex items-center transition-all overflow-visible rounded-lg p-1 gap-1">
           {projectBoards.filter(b => b.id !== 'ai-memory').map(board => (
@@ -1270,24 +1270,40 @@ export default function App() {
               }}
               exit={{ x: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`fixed md:relative inset-y-0 right-0 h-full bg-[var(--color-cream)] border-l border-[var(--color-border)] shadow-2xl md:shadow-xl z-30 flex flex-col overflow-hidden shrink-0 ${isRightCollapsed ? 'w-0 md:w-16' : 'w-[85%] sm:w-[400px] md:w-[400px]'}`}
+              className={`fixed md:relative inset-y-0 right-0 h-full bg-[var(--color-cream)] border-l border-[var(--color-border)] shadow-2xl md:shadow-xl z-[60] flex flex-col overflow-hidden shrink-0 ${isRightCollapsed ? 'w-0 md:w-16' : 'w-full sm:w-[400px] md:w-[400px]'}`}
             >
               {isRightCollapsed ? (
-                <div className="w-[64px] h-full flex flex-col items-center py-4 gap-6">
-                  <button onClick={() => setIsRightCollapsed(false)} className="w-10 h-10 border border-transparent hover:border-black dark:hover:border-white hover:shadow-sm  flex items-center justify-center transition-all">
-                    <ChevronLeft className="w-5 h-5 dark:text-white" />
-                  </button>
-                  <div className="w-10 h-10 rounded-xl border border-[var(--color-border)] bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm  transition-all shrink-0">
-                    <Target className="w-5 h-5" />
+                <>
+                  {/* Desktop Collapsed View */}
+                  <div className="hidden md:flex w-[64px] h-full flex-col items-center py-4 gap-6">
+                    <button onClick={() => setIsRightCollapsed(false)} className="w-10 h-10 border border-transparent hover:border-black dark:hover:border-white hover:shadow-sm  flex items-center justify-center transition-all">
+                      <ChevronLeft className="w-5 h-5 dark:text-white" />
+                    </button>
+                    <div className="w-10 h-10 rounded-xl border border-[var(--color-border)] bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm  transition-all shrink-0">
+                      <Target className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 flex flex-col items-center justify-center opacity-30 select-none pointer-events-none">
+                      <span className="[writing-mode:vertical-rl] rotate-180 font-black tracking-[0.2em] uppercase text-lg dark:text-white">
+                        Refining Card
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex-1 flex flex-col items-center justify-center opacity-30 select-none pointer-events-none">
-                    <span className="[writing-mode:vertical-rl] rotate-180 font-black tracking-[0.2em] uppercase text-lg dark:text-white">
-                      Refining Card
-                    </span>
+
+                  {/* Mobile Floating Toggle (Visible when collapsed on mobile) */}
+                  <div className="md:hidden fixed bottom-6 right-6 z-[70]">
+                    <motion.button
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      onClick={() => setIsRightCollapsed(false)}
+                      className="w-14 h-14 bg-[var(--color-ink)] text-[var(--color-cream)] rounded-full shadow-[var(--shadow-elevated)] flex items-center justify-center border-2 border-[var(--color-border)] active:scale-95 transition-transform"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </motion.button>
                   </div>
-                </div>
+                </>
               ) : (
-                <div className="w-[400px] flex flex-col h-full shrink-0">
+                <div className="w-full sm:w-[400px] flex flex-col h-full shrink-0">
                   <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between bg-[var(--color-cream)] transition-colors shrink-0">
                     <div className="flex items-center gap-2">
                       <button onClick={() => setIsRightCollapsed(true)} className="w-8 h-8 mr-1 border border-transparent hover:border-black dark:hover:border-white bg-transparent flex items-center justify-center hover:shadow-sm  transition-all">
