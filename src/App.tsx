@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Sparkles, User, Bot, LayoutDashboard, Target, X, Home, Moon, Sun, Trash2, FileText, RotateCcw, Plus, Radio, Brain, RefreshCw, Link, UserPlus, Heart, ShieldAlert, Lightbulb, Database, Settings,
-  Footprints, MessageCircle, LayoutGrid, Zap, Swords, PenTool, ArrowRight, Workflow, Layers, FolderCode, FlaskConical, ChevronLeft, ChevronRight, Share2
+  Footprints, MessageCircle, LayoutGrid, Zap, Swords, PenTool, ArrowRight, Workflow, Layers, FolderCode, FlaskConical, ChevronLeft, ChevronRight
 } from 'lucide-react';
+import { NeuronIcon } from './components/ui/NeuronIcon';
 import Markdown from 'react-markdown';
 import { generateNextResponse, generateNodeRefinementResponse, getInitialMessage, flipFailureNodes, scanSignal, synthesizeInterviewsToNode, generateSessionSummary, synthesizeTargetNode } from './lib/gemini';
 import Board from './components/Board';
@@ -537,7 +538,8 @@ export default function App() {
         undefined, // oauthToken
         aiModel === 'universal' ? customBaseUrl : undefined,
         aiModel === 'universal' ? customModelName : undefined,
-        universalApiKey
+        universalApiKey,
+        boardNodesSnapshot
       );
 
       setHistory(newHistory.slice(-30)); // Safety cap on total raw history
@@ -577,7 +579,8 @@ export default function App() {
         undefined, // oauthToken
         aiModel === 'universal' ? customBaseUrl : undefined,
         aiModel === 'universal' ? customModelName : undefined,
-        universalApiKey
+        universalApiKey,
+        boardNodesSnapshot
       );
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: `🔄 **Success!** ${text}` }]);
     } catch (err) {
@@ -669,7 +672,8 @@ export default function App() {
         undefined, // oauthToken
         aiModel === 'universal' ? customBaseUrl : undefined,
         aiModel === 'universal' ? customModelName : undefined,
-        universalApiKey
+        universalApiKey,
+        boardNodesSnapshot
       );
       setHistory(aiResponseHistory.slice(-30));
       if (text) {
@@ -854,7 +858,7 @@ export default function App() {
     setCustomBaseUrl(config.customBaseUrl);
     setCustomModelName(config.customModelName);
     setUniversalApiKey(config.universalKey);
-    
+
     // Global persistence
     localStorage.setItem('problemspace-ai-model', config.model);
     localStorage.setItem('problemspace-summary-freq', config.frequency.toString());
@@ -863,7 +867,7 @@ export default function App() {
     localStorage.setItem('problemspace-custom-base-url', config.customBaseUrl);
     localStorage.setItem('problemspace-custom-model-name', config.customModelName);
     localStorage.setItem('problemspace-universal-api-key', config.universalKey);
-    
+
     setHasStarted(true);
     setIsIntelligenceHubOpen(false);
   };
@@ -873,10 +877,10 @@ export default function App() {
   }
 
   if (!hasStarted) {
-    return <LandingPage 
-      onStart={handleIntelligenceSave} 
-      isDarkMode={isDarkMode} 
-      toggleDarkMode={() => setIsDarkMode(!isDarkMode)} 
+    return <LandingPage
+      onStart={handleIntelligenceSave}
+      isDarkMode={isDarkMode}
+      toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
     />;
   }
 
@@ -951,7 +955,7 @@ export default function App() {
                   title={isNeuralViewOpen ? "Back to Workspace" : "View Neural Memory (AI Scratchpad)"}
                   className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isNeuralViewOpen ? 'bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-900/40 dark:text-fuchsia-300' : 'hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)]'}`}
                 >
-                  <Share2 className="w-4 h-4" />
+                  <NeuronIcon className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setShowSignalScanner(true)}
@@ -970,8 +974,8 @@ export default function App() {
 
                 <div className="mx-1.5 w-px h-5 bg-[var(--color-border)]" />
 
-                <UserProfileDropdown 
-                  onOpenSettings={() => setIsIntelligenceHubOpen(true)} 
+                <UserProfileDropdown
+                  onOpenSettings={() => setIsIntelligenceHubOpen(true)}
                 />
 
                 <button
@@ -1257,11 +1261,11 @@ export default function App() {
             <motion.div
               key="sidebar-panel"
               initial={{ x: '100%', opacity: 0 }}
-              animate={{ 
-                x: 0, 
+              animate={{
+                x: 0,
                 opacity: 1,
-                width: isRightCollapsed 
-                  ? (windowWidth < 768 ? '0px' : '64px') 
+                width: isRightCollapsed
+                  ? (windowWidth < 768 ? '0px' : '64px')
                   : (windowWidth < 768 ? '100%' : '400px')
               }}
               exit={{ x: '100%', opacity: 0 }}
@@ -1688,7 +1692,7 @@ export default function App() {
       <SignalScanner
         isOpen={showSignalScanner}
         onClose={() => setShowSignalScanner(false)}
-        onScan={async (q) => await scanSignal(q, (data) => setBoardItems(data), userApiKey, aiModel, anthropicApiKey, undefined, aiModel === 'universal' ? customBaseUrl : undefined, aiModel === 'universal' ? customModelName : undefined, universalApiKey)}
+        onScan={async (q) => await scanSignal(q, (data) => setBoardItems(data), userApiKey, aiModel, anthropicApiKey, undefined, aiModel === 'universal' ? customBaseUrl : undefined, aiModel === 'universal' ? customModelName : undefined, universalApiKey, boardNodesSnapshot)}
       />
 
       {/* IntelligenceHubModal replaces legacy Settings and QuickSetup paths */}
@@ -1761,6 +1765,7 @@ export default function App() {
           customBaseUrl={aiModel === 'universal' ? customBaseUrl : undefined}
           customModelName={aiModel === 'universal' ? customModelName : undefined}
           universalApiKey={universalApiKey}
+          boardNodes={boardNodesSnapshot}
         />
       )}
 
@@ -1789,29 +1794,32 @@ export default function App() {
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md bg-[var(--color-cream)] border border-[var(--color-border)] shadow-sm  p-8 z-10"
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-[var(--color-cream)] border border-[var(--color-border)] shadow-[var(--shadow-elevated)] rounded-[2.5rem] p-8 z-10 overflow-hidden"
             >
-              <div className="flex items-center gap-4 mb-6">
-                <div className={`w-12 h-12 border border-[var(--color-border)] flex items-center justify-center shrink-0 shadow-sm  ${deleteError ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>
-                  {deleteError ? <ShieldAlert className="w-6 h-6" /> : <Trash2 className="w-6 h-6" />}
+              <div className="flex items-center gap-5 mb-6">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${deleteError ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>
+                  {deleteError ? <ShieldAlert className="w-7 h-7" /> : <Trash2 className="w-7 h-7" />}
                 </div>
-                <h3 className="text-xl font-black uppercase tracking-tight dark:text-white">
-                  {deleteError ? "Action Restricted" : "Delete Canvas?"}
-                </h3>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight text-[var(--color-ink)]">
+                    {deleteError ? "Action Restricted" : "Delete Canvas?"}
+                  </h3>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-ink-muted)] mt-1">Permanent Action</p>
+                </div>
               </div>
 
-              <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-8 leading-relaxed">
-                {deleteError || "Are you sure you want to permanently delete this canvas? This will remove all nodes, edges, and history. This action cannot be undone."}
+              <p className="text-sm font-medium text-[var(--color-ink-muted)] mb-10 leading-relaxed">
+                {deleteError || "Are you sure you want to permanently delete this canvas? This will remove all nodes, edges, and session history. This cannot be undone."}
               </p>
 
               <div className="flex gap-4">
                 {deleteError ? (
                   <button
                     onClick={() => setDeleteError(null)}
-                    className="flex-1 py-3 bg-[var(--color-ink)] text-[var(--color-cream)] font-black uppercase tracking-widest border border-[var(--color-border)] shadow-sm  hover:-translate-y-0.5 transition-all text-xs"
+                    className="flex-1 py-4 bg-[var(--color-ink)] text-[var(--color-cream)] font-bold uppercase tracking-widest rounded-2xl border border-transparent shadow-lg hover:-translate-y-1 hover:bg-[var(--color-sage)] transition-all text-[10px]"
                   >
                     Understood
                   </button>
@@ -1819,13 +1827,13 @@ export default function App() {
                   <>
                     <button
                       onClick={() => setBoardToDelete(null)}
-                      className="flex-1 py-3 bg-white dark:bg-neutral-800 text-[var(--color-ink)] font-black uppercase tracking-widest border border-[var(--color-border)] shadow-sm  hover:-translate-y-0.5 transition-all text-xs"
+                      className="flex-1 py-4 bg-[var(--color-cream-warm)] text-[var(--color-ink)] font-bold uppercase tracking-widest rounded-2xl border border-[var(--color-border)] shadow-sm hover:bg-[var(--color-cream-deep)] hover:-translate-y-1 transition-all text-[10px]"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={confirmDeleteBoard}
-                      className="flex-1 py-3 bg-red-600 text-white font-black uppercase tracking-widest border-2 border-black shadow-sm hover:-translate-y-0.5 transition-all text-xs"
+                      className="flex-1 py-4 bg-red-600 text-white font-bold uppercase tracking-widest rounded-2xl shadow-lg hover:bg-red-700 hover:-translate-y-1 transition-all text-[10px]"
                     >
                       Delete
                     </button>

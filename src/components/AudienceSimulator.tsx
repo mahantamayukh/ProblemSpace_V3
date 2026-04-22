@@ -45,6 +45,7 @@ interface AudienceSimulatorProps {
   customBaseUrl?: string;
   customModelName?: string;
   universalApiKey?: string;
+  boardNodes?: any[];
 }
 
 // Context-aware suggested questions
@@ -81,7 +82,8 @@ export default function AudienceSimulator({
   aiModel = 'gemini-2.0-flash',
   customBaseUrl,
   customModelName,
-  universalApiKey
+  universalApiKey,
+  boardNodes
 }: AudienceSimulatorProps) {
 
   const makeInitialMessages = (): Message[] => [
@@ -145,7 +147,8 @@ export default function AudienceSimulator({
         undefined, // oauthToken
         customBaseUrl,
         customModelName,
-        universalApiKey
+        universalApiKey,
+        boardNodes
       );
       setHistory(newHistory);
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: responseText }]);

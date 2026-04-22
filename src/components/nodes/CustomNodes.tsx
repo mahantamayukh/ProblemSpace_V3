@@ -36,6 +36,7 @@ const AutoResizeTextarea = ({ value, onBlur, className, placeholder, rows = 1, r
     />
   );
 };
+import { NeuronIcon } from '../ui/NeuronIcon';
 
 const nodeStyles = {
   problem: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-900', icon: Target, iconColor: 'text-blue-600', darkBg: 'dark:bg-blue-950/40', darkText: 'dark:text-blue-300', darkIcon: 'dark:text-blue-400' },
@@ -54,7 +55,7 @@ const nodeStyles = {
   tweet: { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-900', icon: MessageCircle, iconColor: 'text-sky-600', darkBg: 'dark:bg-sky-950/40', darkText: 'dark:text-sky-300', darkIcon: 'dark:text-sky-400' },
   failure: { bg: 'bg-red-100', border: 'border-red-400', text: 'text-red-900', icon: AlertOctagon, iconColor: 'text-red-600', darkBg: 'dark:bg-red-950/40', darkText: 'dark:text-red-300', darkIcon: 'dark:text-red-400' },
   signal: { bg: 'bg-violet-100', border: 'border-violet-300', text: 'text-violet-900', icon: Sparkles, iconColor: 'text-violet-600', darkBg: 'dark:bg-violet-950/40', darkText: 'dark:text-violet-300', darkIcon: 'dark:text-violet-400' },
-  memory: { bg: 'bg-fuchsia-500/10', border: 'border-fuchsia-500', text: 'text-fuchsia-100', icon: Brain, iconColor: 'text-fuchsia-400', darkBg: 'dark:bg-fuchsia-950/40', darkText: 'dark:text-fuchsia-300', darkIcon: 'dark:text-fuchsia-400' },
+  memory: { bg: 'bg-fuchsia-500/10', border: 'border-fuchsia-500', text: 'text-fuchsia-100', icon: NeuronIcon, iconColor: 'text-fuchsia-400', darkBg: 'dark:bg-fuchsia-950/40', darkText: 'dark:text-fuchsia-300', darkIcon: 'dark:text-fuchsia-400' },
 };
 
 const typeLabels: Record<string, string> = {

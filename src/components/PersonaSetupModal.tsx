@@ -58,87 +58,80 @@ export default function PersonaSetupModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 24 }}
           transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-          className="relative z-10 w-full max-w-lg bg-[var(--color-cream)] border border-[var(--color-border)] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          className="relative z-10 w-full max-w-lg bg-[var(--color-cream)] border border-[var(--color-border)] rounded-[2.5rem] shadow-[var(--shadow-elevated)] flex flex-col overflow-hidden"
         >
           {/* Header */}
-          <div className="p-5 border-b border-[var(--color-border)] bg-[var(--color-sage-light)] flex items-center justify-between shrink-0 rounded-t-2xl">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm">
-                <Brain className="w-5 h-5 text-white" />
+          <div className="p-6 border-b border-[var(--color-border)] bg-[var(--color-sage-light)] flex items-center justify-between shrink-0 rounded-t-[2.5rem]">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--color-sage)] flex items-center justify-center shadow-lg transform -rotate-3 text-[var(--color-cream)]">
+                <Brain className="w-6 h-6" />
               </div>
               <div>
-                <span className="block text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                <span className="block text-[10px] font-black uppercase tracking-widest text-[var(--color-sage)]">
                   Persona Intelligence
                 </span>
-                <span className="block font-semibold text-base text-[var(--color-ink)] leading-tight">
+                <span className="block font-black text-xl text-[var(--color-ink)] leading-tight">
                   {personaLabel}
                 </span>
-                {personaDetails && (
-                  <span className="block text-[10px] text-emerald-800 dark:text-emerald-300 italic mt-0.5 line-clamp-1">
-                    {personaDetails}
-                  </span>
-                )}
               </div>
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-cream-warm)] transition-all shrink-0"
+              className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[var(--color-cream-deep)] transition-all shrink-0 border border-transparent hover:border-[var(--color-border)]"
             >
               <X className="w-5 h-5 text-[var(--color-ink-muted)]" />
             </button>
           </div>
 
           {/* Body */}
-          <div className="p-5 flex flex-col gap-5 overflow-y-auto max-h-[65vh]">
-            <p className="text-[11px] font-medium text-[var(--color-ink-light)] leading-relaxed border-l-2 border-emerald-400 pl-3">
+          <div className="p-8 flex flex-col gap-6 overflow-y-auto max-h-[65vh] bg-[var(--color-cream)] custom-scrollbar">
+            <p className="text-[11px] font-medium text-[var(--color-ink-muted)] leading-relaxed border-l-4 border-[var(--color-sage)] pl-4 opacity-80">
               Define who this person is before starting the interview. The richer the profile, the more realistic the simulation.
             </p>
 
             {/* Identity Profile */}
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-[var(--color-ink-muted)]">
+            <div className="flex flex-col gap-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-ink-muted)] px-1">
                 Identity Profile <span className="text-red-500">*</span>
-                <span className="ml-2 font-normal text-[var(--color-ink-muted)]">Who are they?</span>
               </label>
               <AutoResizeTextarea
                 value={profile}
                 onChange={setProfile}
-                placeholder="e.g. A 40-year-old logistics manager who relies on spreadsheets, skeptical of new software tools…"
+                placeholder="e.g. A 40-year-old logistics manager who relies on spreadsheets..."
                 minRows={1}
               />
-              <div className="flex flex-wrap gap-1.5 mt-1">
+              <div className="flex flex-wrap gap-2 mt-1 px-1">
                 {PROFILE_SUGGESTIONS.map((s, i) => (
                   <button
                     key={i}
                     onClick={() => setProfile(s)}
-                    className="px-2.5 py-1 text-[10px] font-medium rounded-lg border border-[var(--color-border)] bg-[var(--color-cream-warm)] text-[var(--color-ink-muted)] hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
+                    className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl border border-[var(--color-border)] bg-[var(--color-cream-warm)] text-[var(--color-ink-muted)] hover:border-[var(--color-sage)] hover:text-[var(--color-sage)] transition-all shadow-sm"
                   >
-                    {s.substring(0, 30)}…
+                    {s.substring(0, 25)}…
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Behavior & Tone */}
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-[var(--color-ink-muted)]">
+            <div className="flex flex-col gap-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-ink-muted)] px-1">
                 Behavior & Tone
-                <span className="ml-2 font-normal text-[var(--color-ink-muted)]">How do they respond? (optional)</span>
               </label>
               <AutoResizeTextarea
                 value={behavior}
                 onChange={setBehavior}
-                placeholder="e.g. Blunt, uses jargon, focuses on cost savings, highly skeptical of anything that 'sounds too good'…"
+                placeholder="e.g. Blunt, uses jargon, focuses on cost savings..."
                 minRows={1}
               />
-              <div className="flex flex-wrap gap-1.5 mt-1">
+              <div className="flex flex-wrap gap-2 mt-1 px-1">
                 {BEHAVIOR_SUGGESTIONS.map((s, i) => (
                   <button
                     key={i}
                     onClick={() => setBehavior(s)}
-                    className="px-2.5 py-1 text-[10px] font-medium rounded-lg border border-[var(--color-border)] bg-[var(--color-cream-warm)] text-[var(--color-ink-muted)] hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all"
+                    className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-xl border border-[var(--color-border)] bg-[var(--color-cream-warm)] text-[var(--color-ink-muted)] hover:border-[var(--color-sage)] hover:text-[var(--color-sage)] transition-all shadow-sm"
                   >
-                    {s.substring(0, 30)}…
+                    {s.substring(0, 25)}…
                   </button>
                 ))}
               </div>
@@ -146,17 +139,17 @@ export default function PersonaSetupModal({
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-[var(--color-border)] bg-[var(--color-cream)] shrink-0 flex gap-3 rounded-b-2xl">
+          <div className="p-8 border-t border-[var(--color-border)] bg-[var(--color-cream-warm)] shrink-0 flex gap-4 rounded-b-[2.5rem]">
             <button
               onClick={onClose}
-              className="px-4 py-2.5 border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink)] bg-[var(--color-cream)] rounded-xl hover:bg-[var(--color-cream-warm)] transition-all"
+              className="px-8 py-4 border border-[var(--color-border)] text-[10px] font-black uppercase tracking-widest text-[var(--color-ink-muted)] bg-[var(--color-cream)] rounded-2xl hover:bg-[var(--color-cream-deep)] transition-all shadow-sm"
             >
               Cancel
             </button>
             <button
               disabled={!canBegin}
               onClick={() => onBeginInterview(profile.trim(), behavior.trim())}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-500 text-white text-xs font-semibold rounded-xl border border-emerald-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0 group"
+              className="flex-1 flex items-center justify-center gap-3 py-4 bg-[var(--color-ink)] text-[var(--color-cream)] text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl hover:bg-[var(--color-sage)] hover:-translate-y-1 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:translate-y-0 group"
             >
               <UserPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
               Begin Interview

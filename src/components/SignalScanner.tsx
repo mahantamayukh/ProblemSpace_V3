@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Loader2, X, Terminal, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Search, Loader2, X, Terminal, CheckCircle2, AlertTriangle, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface SignalScannerProps {
@@ -77,32 +77,32 @@ export default function SignalScanner({ onScan, onClose, isOpen }: SignalScanner
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-            className="relative w-full max-w-lg bg-[var(--color-cream)] border border-[var(--color-border)] rounded-2xl shadow-2xl p-6 overflow-hidden"
+            className="relative w-full max-w-lg bg-[var(--color-cream)] border border-[var(--color-border)] rounded-[2.5rem] shadow-[var(--shadow-elevated)] p-8 overflow-hidden"
           >
             {/* Close button */}
             <button
               onClick={handleClose}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-cream-warm)] transition-all"
+              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-xl hover:bg-[var(--color-cream-deep)] transition-all border border-transparent hover:border-[var(--color-border)]"
             >
               <X className="w-5 h-5 text-[var(--color-ink-muted)]" />
             </button>
 
             {/* Header */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center shadow-sm shrink-0">
-                <Search className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--color-sage)] flex items-center justify-center shadow-lg shrink-0 transform rotate-3 text-[var(--color-cream)]">
+                <Search className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold tracking-tight text-[var(--color-ink)]">Signal Scanner</h2>
-                <p className="text-[10px] font-medium text-[var(--color-ink-muted)]">AI-Powered Market Intelligence</p>
+                <h2 className="text-xl font-black tracking-tight text-[var(--color-ink)]">Signal Scanner</h2>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-sage)] mt-0.5">Market Intelligence Engine</p>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Search input row */}
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-[var(--color-ink-muted)]">Search Query or Topic</label>
-                <div className="flex gap-2">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[var(--color-ink-muted)] px-1">Research Objective</label>
+                <div className="flex gap-3">
                   <div className="relative flex-1">
                     <input
                       type="text"
@@ -110,26 +110,26 @@ export default function SignalScanner({ onScan, onClose, isOpen }: SignalScanner
                       onChange={e => setQuery(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && handleScan()}
                       disabled={scanState === 'scanning'}
-                      placeholder="e.g. competitors of Airbnb, trends in AI SaaS..."
-                      className="w-full text-xs font-medium p-3 border border-[var(--color-border)] rounded-xl bg-[var(--color-cream-warm)] text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-purple-300 dark:focus:ring-purple-700 pr-10 transition-all disabled:opacity-50"
+                      placeholder="e.g. competitors of Airbnb, AI SaaS trends..."
+                      className="w-full text-xs font-medium p-4 border border-[var(--color-border)] rounded-2xl bg-[var(--color-cream-warm)] text-[var(--color-ink)] focus:outline-none focus:ring-2 focus:ring-[var(--color-sage-light)] pr-12 transition-all disabled:opacity-50 shadow-inner"
                     />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <Terminal className="w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <Terminal className="w-4 h-4 text-[var(--color-ink-muted)] opacity-40" />
                     </div>
                   </div>
                   <button
                     onClick={handleScan}
                     disabled={scanState === 'scanning' || !query.trim()}
-                    className="px-4 bg-purple-500 text-white font-semibold text-xs rounded-xl border border-purple-600 shadow-sm hover:shadow-md hover:bg-purple-600 hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+                    className="px-6 bg-[var(--color-ink)] text-[var(--color-cream)] font-black uppercase tracking-widest text-[10px] rounded-2xl border border-transparent shadow-xl hover:bg-[var(--color-sage)] hover:-translate-y-1 active:translate-y-0 transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-3 shrink-0"
                   >
                     {scanState === 'scanning' ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                         Scanning…
                       </>
                     ) : (
                       <>
-                        <Search className="w-3.5 h-3.5" />
+                        <Search className="w-4 h-4" />
                         Scan
                       </>
                     )}
@@ -138,7 +138,7 @@ export default function SignalScanner({ onScan, onClose, isOpen }: SignalScanner
               </div>
 
               {/* Status panel */}
-              <div className="p-4 border border-dashed border-[var(--color-border)] rounded-xl bg-[var(--color-cream-warm)] min-h-[90px] flex items-center justify-center">
+              <div className="p-6 border border-dashed border-[var(--color-border)] rounded-3xl bg-[var(--color-cream-warm)] min-h-[120px] flex items-center justify-center overflow-hidden">
                 <AnimatePresence mode="wait">
 
                   {/* Scanning */}
@@ -148,15 +148,15 @@ export default function SignalScanner({ onScan, onClose, isOpen }: SignalScanner
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="flex flex-col items-center justify-center text-center gap-3 w-full py-2"
+                      className="flex flex-col items-center justify-center text-center gap-4 w-full py-2"
                     >
-                      <div className="w-8 h-8 border-t-2 border-purple-500 animate-spin rounded-full" />
+                      <div className="w-10 h-10 border-t-2 border-[var(--color-sage)] animate-spin rounded-full shadow-sm" />
                       <div>
-                        <p className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 animate-pulse">
-                          Engaging Intelligence Engine…
+                        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--color-sage)] animate-pulse">
+                          Accessing Intelligence Layers…
                         </p>
-                        <p className="text-[9px] text-[var(--color-ink-muted)] mt-0.5">
-                          Researching market signals and synthesising canvas nodes.
+                        <p className="text-[10px] font-medium text-[var(--color-ink-muted)] mt-1 max-w-[200px] opacity-60">
+                          Synthesizing canvas nodes from live market signals.
                         </p>
                       </div>
                     </motion.div>
@@ -166,16 +166,18 @@ export default function SignalScanner({ onScan, onClose, isOpen }: SignalScanner
                   {scanState === 'success' && (
                     <motion.div
                       key="success"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex flex-col items-center justify-center text-center gap-2 w-full py-2"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex flex-col items-center justify-center text-center gap-3 w-full py-2"
                     >
-                      <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-                      <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Scan complete!</p>
-                      <p className="text-[10px] text-[var(--color-ink-muted)] italic max-w-xs leading-relaxed">
+                      <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
+                        <CheckCircle2 className="w-6 h-6" />
+                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Scan Synchronized</p>
+                      <p className="text-[10px] font-medium text-[var(--color-ink-muted)] italic max-w-xs leading-relaxed">
                         {scanResult}
                       </p>
-                      <p className="text-[9px] text-[var(--color-ink-muted)] mt-1">New nodes added to your canvas. Closing…</p>
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-ink-muted)] mt-1 opacity-40">Auto-closing engine...</p>
                     </motion.div>
                   )}
 
@@ -183,22 +185,24 @@ export default function SignalScanner({ onScan, onClose, isOpen }: SignalScanner
                   {scanState === 'error' && (
                     <motion.div
                       key="error"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex flex-col items-center justify-center text-center gap-2 w-full py-2"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex flex-col items-center justify-center text-center gap-3 w-full py-2"
                     >
-                      <AlertTriangle className="w-6 h-6 text-amber-500" />
-                      <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">Scan failed</p>
+                      <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shadow-sm">
+                        <AlertTriangle className="w-6 h-6" />
+                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-amber-600">System Interrupted</p>
                       {errorDetail && (
-                        <p className="text-[9px] font-mono text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-1.5 max-w-xs break-all leading-relaxed">
-                          {errorDetail.length > 200 ? errorDetail.slice(0, 200) + '…' : errorDetail}
+                        <p className="text-[9px] font-mono text-red-500 bg-red-50/50 border border-red-100 rounded-xl px-4 py-2 max-w-xs break-all leading-relaxed shadow-sm">
+                          {errorDetail.length > 150 ? errorDetail.slice(0, 150) + '…' : errorDetail}
                         </p>
                       )}
                       <button
                         onClick={handleRetry}
-                        className="mt-1 text-[10px] font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+                        className="mt-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-sage)] hover:opacity-70 transition-all underline underline-offset-4"
                       >
-                        ← Try again
+                        ← Restart Scanner
                       </button>
                     </motion.div>
                   )}
@@ -209,17 +213,17 @@ export default function SignalScanner({ onScan, onClose, isOpen }: SignalScanner
                       key="idle"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="flex flex-col items-center gap-2 text-center w-full py-2"
+                      className="flex flex-col items-center gap-3 text-center w-full py-2"
                     >
-                      <p className="text-[10px] text-[var(--color-ink-muted)] leading-relaxed max-w-[280px] mx-auto">
+                      <p className="text-[10px] font-medium text-[var(--color-ink-muted)] leading-relaxed max-w-[280px] mx-auto opacity-70">
                         Enter a topic — competitors, market trends, or a problem space — and the AI will populate your canvas with structured signal nodes.
                       </p>
-                      <div className="flex gap-2 mt-1 flex-wrap justify-center">
+                      <div className="flex gap-2 mt-2 flex-wrap justify-center">
                         {['Figma competitors', 'AI SaaS trends', 'Remote work problems'].map(ex => (
                           <button
                             key={ex}
                             onClick={() => setQuery(ex)}
-                            className="px-2 py-0.5 text-[9px] font-medium border border-[var(--color-border)] rounded-full text-[var(--color-ink-muted)] hover:border-purple-400 hover:text-purple-600 dark:hover:text-purple-400 transition-all"
+                            className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest border border-[var(--color-border)] rounded-xl text-[var(--color-ink-muted)] bg-[var(--color-cream)] hover:border-[var(--color-sage)] hover:text-[var(--color-sage)] hover:shadow-sm transition-all"
                           >
                             {ex}
                           </button>
@@ -232,9 +236,9 @@ export default function SignalScanner({ onScan, onClose, isOpen }: SignalScanner
               </div>
 
               {/* Footer */}
-              <div className="flex justify-between items-center text-[9px] font-medium text-[var(--color-ink-muted)]">
-                <span>Problem Discovery Engine v2.0</span>
-                <span>AI-Assisted Research</span>
+              <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-[var(--color-ink-muted)] opacity-40 px-1 pt-2">
+                <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-[var(--color-sage)]" /> Neural Sync v2.0</span>
+                <span>Active Research</span>
               </div>
             </div>
           </motion.div>

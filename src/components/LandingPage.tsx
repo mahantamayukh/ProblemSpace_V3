@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import GrainyGradient from './ui/gradient-shader-card';
 import IntelligenceHubModal from './IntelligenceHubModal';
+import ApiGuideModal from './ApiGuideModal';
 
 interface Ripple {
   id: number;
@@ -22,6 +23,7 @@ export default function LandingPage({ onStart, isDarkMode, toggleDarkMode }: { o
   const [showConfig, setShowConfig] = useState(false);
   const [frequency, setFrequency] = useState(10);
   const [model, setModel] = useState('gemini-2.0-flash');
+  const [showApiGuide, setShowApiGuide] = useState(false);
 
   const handleStartRequest = () => {
     const isComplete = localStorage.getItem('problemspace-setup-complete') === 'true';
@@ -87,6 +89,13 @@ export default function LandingPage({ onStart, isDarkMode, toggleDarkMode }: { o
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowApiGuide(true)} 
+            className="px-4 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-cream)] text-[11px] font-black uppercase tracking-widest hover:bg-[var(--color-cream-warm)] transition-all flex items-center gap-2"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-[var(--color-lavender)]" />
+            API Guide
+          </button>
           <button onClick={toggleDarkMode} className="w-9 h-9 rounded-xl border border-[var(--color-border)] bg-[var(--color-cream)] flex items-center justify-center hover:bg-[var(--color-cream-warm)] hover:shadow-sm transition-all">
             {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
@@ -249,6 +258,9 @@ export default function LandingPage({ onStart, isDarkMode, toggleDarkMode }: { o
             }}
             onClose={() => setShowConfig(false)}
           />
+        )}
+        {showApiGuide && (
+          <ApiGuideModal onClose={() => setShowApiGuide(false)} />
         )}
       </AnimatePresence>
 

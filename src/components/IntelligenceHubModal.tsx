@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, History, TrendingDown, ArrowRight, Zap, Sparkles, Sliders, Key, Eye, EyeOff, ShieldCheck, Database, AlertCircle, CheckCircle2, Search } from 'lucide-react';
+import { X, History, TrendingDown, ArrowRight, Zap, Sparkles, Sliders, Key, Eye, EyeOff, ShieldCheck, Database, AlertCircle, CheckCircle2, Search, HelpCircle } from 'lucide-react';
+import { NeuronIcon } from './ui/NeuronIcon';
 import { MODELS } from '../lib/models';
 import { testAIConnection } from '../lib/gemini';
+import ApiGuideModal from './ApiGuideModal';
 
 interface IntelligenceHubModalProps {
   initialConfig: {
@@ -45,6 +47,7 @@ export default function IntelligenceHubModal({
   const [diagnosticsStatus, setDiagnosticsStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [showApiGuide, setShowApiGuide] = useState(false);
 
   // Handle Save with real Diagnostics
   const handleSave = async () => {
@@ -125,9 +128,18 @@ export default function IntelligenceHubModal({
               <p className="text-xs text-[var(--color-ink-muted)] mt-1 font-medium">Configure models & neural memory</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-[var(--color-cream-deep)] rounded-xl transition-all">
-            <X className="w-5 h-5 text-[var(--color-ink-muted)]" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowApiGuide(true)} 
+              title="API Guide"
+              className="p-2 hover:bg-[var(--color-cream-deep)] rounded-xl transition-all text-[var(--color-ink-muted)] hover:text-[var(--color-lavender)]"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+            <button onClick={onClose} className="p-2 hover:bg-[var(--color-cream-deep)] rounded-xl transition-all">
+              <X className="w-5 h-5 text-[var(--color-ink-muted)]" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar bg-[var(--color-cream)]">
@@ -177,7 +189,10 @@ export default function IntelligenceHubModal({
                       <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-ink)] flex items-center gap-2">
                         <Zap className="w-3 h-3 text-amber-500" /> Google Gemini Key
                       </span>
-                      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[var(--color-lavender)] hover:underline">Get Key</a>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => setShowApiGuide(true)} className="text-[9px] font-black text-blue-500 hover:underline">need help?</button>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[var(--color-lavender)] hover:underline">Get Key</a>
+                      </div>
                     </div>
                     <input 
                       type={showKeys ? 'text' : 'password'}
@@ -195,7 +210,10 @@ export default function IntelligenceHubModal({
                       <span className="text-[10px] font-black uppercase tracking-widest text-[var(--color-ink)] flex items-center gap-2">
                         <Sparkles className="w-3 h-3 text-purple-500" /> Anthropic Claude Key
                       </span>
-                      <a href="https://console.anthropic.com/" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[var(--color-lavender)] hover:underline">Get Key</a>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => setShowApiGuide(true)} className="text-[9px] font-black text-blue-500 hover:underline">need help?</button>
+                        <a href="https://console.anthropic.com/" target="_blank" rel="noreferrer" className="text-[9px] font-black text-[var(--color-lavender)] hover:underline">Get Key</a>
+                      </div>
                     </div>
                     <input 
                       type={showKeys ? 'text' : 'password'}
@@ -220,7 +238,10 @@ export default function IntelligenceHubModal({
                       </div>
                     </div>
                     <div className="space-y-2 px-1">
-                      <span className="text-[9px] font-black text-[var(--color-ink-muted)] uppercase ml-1">Universal API Key</span>
+                      <div className="flex items-center justify-between ml-1">
+                        <span className="text-[9px] font-black text-[var(--color-ink-muted)] uppercase">Universal API Key</span>
+                        <button onClick={() => setShowApiGuide(true)} className="text-[9px] font-black text-blue-500 hover:underline mr-1">need help?</button>
+                      </div>
                       <input type={showKeys ? 'text' : 'password'} value={universalKey} onChange={e => setUniversalKey(e.target.value)} placeholder="Enter key..." className="w-full px-4 py-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-cream)] font-mono text-[10px] outline-none focus:border-[var(--color-lavender)] transition-all" />
                     </div>
                   </div>
@@ -242,7 +263,7 @@ export default function IntelligenceHubModal({
 
           <div className="space-y-6">
             <label className="text-[10px] font-black text-[var(--color-ink-muted)] uppercase tracking-widest flex items-center gap-2">
-              <History className="w-4 h-4 text-[var(--color-sage)]" />
+              <NeuronIcon className="w-4 h-4 text-[var(--color-sage)]" />
               2. Neural Memory Cycle
             </label>
             <div className="grid grid-cols-3 gap-4">
@@ -331,6 +352,11 @@ export default function IntelligenceHubModal({
           </div>
         </div>
       </motion.div>
+      <AnimatePresence>
+        {showApiGuide && (
+          <ApiGuideModal onClose={() => setShowApiGuide(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

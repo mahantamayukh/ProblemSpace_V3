@@ -341,7 +341,7 @@ const ALL_NODE_TYPES = [
 
 export const addBoardItemsDeclaration: FunctionDeclaration = {
   name: "addBoardItems",
-  description: "Extracts key concepts from the conversation and adds them as NEW nodes to the visual board. Can also connect them with edges. Call this when new insights, problems, audiences, constraints etc. are discovered. NEVER use this to modify an existing node (its content can only be edited in its specific edit section).",
+  description: "Extracts key concepts from the conversation and adds them as NEW nodes to the visual board. Call this when new insights, problems, audiences, constraints etc. are discovered. DEDUPLICATION: Check the existing board nodes before calling this. If a node with similar info exists, DO NOT create it. TYPE DIVERSITY: Use a variety of node types (e.g., hmw, rose, metric, journey-step) to make the board more strategic.",
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -448,6 +448,8 @@ MEMORY CONSOLIDATION RULES:
 
 Strategic Principles:
 - **BREVITY & CONCISION**: Be extremely concise. Your chat responses should be under 150 words. Offload ALL detailed descriptions to the Workspace or Neural Memory nodes. 
+- **DEDUPLICATION**: NEVER create a node that duplicates information already present on the board. If an idea is similar to an existing node, either reference the existing one in chat or suggest an update if necessary.
+- **TYPE DIVERSITY**: Use the full range of node types (${ALL_NODE_TYPES.join(', ')}). Don't just use 'insight' and 'problem'. Match the type to the strategic intent (e.g., 'metric' for KPIs, 'hmw' for questions).
 - Use the chat for **Facilitation** and **Strategic Guidance**, not for dumping information.
 - Be methodology-agnostic: don't force a "sprint" or "phase" unless specifically asked.
 - Focus on the "Problem Space": push the user to explore the 'why' and 'who' before jumping to the 'how'.
@@ -558,8 +560,17 @@ The user has selected a card. Work WITH them to improve it.
 2. If part of a Journey, suggest upstream/downstream impacts.
 3. Be proactive: suggest updates to this node via \`updateNode\` or add new related ideas via \`addBoardItems\`.`;
 
-function buildSystemInstruction(phase: number, exerciseId: string | null, customPrompt?: string, constraints?: Array<{ category: string, text: string }>, thinkingModeId?: string | null, sessionSummary?: string, aiMemory?: { nodes: any[], edges: any[] }): string {
+function buildSystemInstruction(phase: number, exerciseId: string | null, customPrompt?: string, constraints?: Array<{ category: string, text: string }>, thinkingModeId?: string | null, sessionSummary?: string, aiMemory?: { nodes: any[], edges: any[] }, boardNodes?: any[]): string {
   let instruction = BASE_INSTRUCTION + "\n\n";
+
+  if (boardNodes && boardNodes.length > 0) {
+    instruction += `### CURRENT BOARD STATE (Existing Nodes)\n`;
+    instruction += `(DEDUPLICATION: Check this list before creating new nodes. Do NOT repeat these insights.)\n`;
+    boardNodes.slice(-15).forEach(n => {
+      instruction += `- [${n.type}] ${n.data.label}: ${n.data.details}\n`;
+    });
+    instruction += `\n`;
+  }
 
   if (aiMemory && aiMemory.nodes.length > 0) {
     const memoryLimit = 10;
@@ -725,12 +736,13 @@ export async function generateNextResponse(
   oauthToken?: string,
   customBaseUrl?: string,
   customModelName?: string,
-  universalApiKey?: string
+  universalApiKey?: string,
+  boardNodes?: any[]
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
   const cleanMessage = newMessage.replace(/^\[(Research|Think|Canvas):\s*([\s\S]*?)\]$/, "$2");
-  const instruction = buildSystemInstruction(phase, exerciseId, customPrompt, constraints, thinkingModeId, sessionSummary, aiMemory);
+  const instruction = buildSystemInstruction(phase, exerciseId, customPrompt, constraints, thinkingModeId, sessionSummary, aiMemory, boardNodes);
   const tools = [{ functionDeclarations: [addBoardItemsDeclaration, updateAiMemoryDeclaration] }];
   const contents = [...history, { role: 'user', parts: [{ text: cleanMessage }] }];
 
@@ -785,13 +797,15 @@ export async function generatePersonaResponse(
   oauthToken?: string,
   customBaseUrl?: string,
   customModelName?: string,
-  universalApiKey?: string
+  universalApiKey?: string,
+  boardNodes?: any[]
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
   const instruction = `You are roleplaying as a real person — a user persona. Stay in character.
 ### PROJECT CONTEXT:
 ${boardContext}
+${boardNodes && boardNodes.length > 0 ? `### EXISTING CANVAS NODES (DEDUPLICATION ACTIVE):\n${boardNodes.map(n => `- [${n.type}] ${n.data.label}`).join('\n')}` : ""}
 ### YOUR IDENTITY:
 ${personaData.label}: ${personaData.details}
 ${personaData.personaProfile || ""}
@@ -846,12 +860,13 @@ export async function flipFailureNodes(
   oauthToken?: string,
   customBaseUrl?: string,
   customModelName?: string,
-  universalApiKey?: string
+  universalApiKey?: string,
+  boardNodes?: any[]
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
   const failureList = failureNodes.map((n, i) => `${i + 1}. "${n.label}" — ${n.details}`).join('\n');
-  const instruction = `Flip each failure into a positive actionable insight node using addBoardItems.`;
+  const instruction = `Flip each failure into a positive actionable insight node using addBoardItems. DEDUPLICATION: Do NOT create nodes for insights that already exist on the board.\n\nEXISTING NODES:\n${(boardNodes || []).map(n => `- ${n.data.label}`).join('\n')}`;
   const tools = [{ functionDeclarations: [addBoardItemsDeclaration] }];
   const contents = [{ role: 'user', parts: [{ text: `Flip these:\n${failureList}` }] }];
 
@@ -891,12 +906,14 @@ export async function scanSignal(
   oauthToken?: string,
   customBaseUrl?: string,
   customModelName?: string,
-  universalApiKey?: string
+  universalApiKey?: string,
+  boardNodes?: any[]
 ) {
   const isClaude = modelName.startsWith('claude-');
   const isUniversal = modelName === 'universal';
 
   const instruction = `You are a market intelligence engine. Analyze the topic: "${query}".
+${boardNodes && boardNodes.length > 0 ? `\nEXISTING CANVAS NODES (Do NOT duplicate):\n${boardNodes.map(n => `- [${n.type}] ${n.data.label}`).join('\n')}\n` : ""}
 
 Your job is to research this topic and populate a discovery canvas with structured nodes using the addBoardItems tool.
 

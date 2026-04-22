@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Share2, Zap, Target, ArrowRight, Loader2, Moon, Sun } from 'lucide-react';
+import { Sparkles, Zap, Target, ArrowRight, Loader2, Moon, Sun } from 'lucide-react';
+import { NeuronIcon } from './ui/NeuronIcon';
 import { useAuth } from '../lib/AuthContext';
 
 const FEATURES = [
-  { icon: Share2, label: 'Neural Memory', desc: 'AI that learns your thinking style across every session' },
+  { icon: NeuronIcon, label: 'Neural Memory', desc: 'AI that learns your thinking style across every session' },
   { icon: Target, label: 'Deep Discovery', desc: '12+ frameworks — from IDEO to Amazon Working Backwards' },
   { icon: Zap, label: 'Gemini Powered', desc: 'Your Google account. Your AI. Zero setup.' },
 ];
