@@ -49,12 +49,10 @@ const getLayoutedElements = (nodes: any[], edges: any[], direction = 'TB') => {
 
   dagre.layout(dagreGraph);
 
-  const newNodes = nodes.map((node) => {
+  const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
     const newNode = {
       ...node,
-      targetPosition: isHorizontal ? 'left' : 'top',
-      sourcePosition: isHorizontal ? 'right' : 'bottom',
       position: {
         x: nodeWithPosition.x - nodeWidth / 2,
         y: nodeWithPosition.y - nodeHeight / 2,
@@ -64,7 +62,49 @@ const getLayoutedElements = (nodes: any[], edges: any[], direction = 'TB') => {
     return newNode;
   });
 
-  return { nodes: newNodes, edges };
+  const layoutedEdges = edges.map((edge) => {
+    const sourceNode = nodes.find(n => n.id === edge.source);
+    const targetNode = nodes.find(n => n.id === edge.target);
+    
+    if (!sourceNode || !targetNode) return edge;
+
+    const sourcePos = dagreGraph.node(edge.source);
+    const targetPos = dagreGraph.node(edge.target);
+
+    let sourceHandle = 's-bottom';
+    let targetHandle = 't-top';
+
+    const dx = targetPos.x - sourcePos.x;
+    const dy = targetPos.y - sourcePos.y;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Horizontal relationship
+      if (dx > 0) {
+        sourceHandle = 's-right';
+        targetHandle = 't-left';
+      } else {
+        sourceHandle = 's-left';
+        targetHandle = 't-right';
+      }
+    } else {
+      // Vertical relationship
+      if (dy > 0) {
+        sourceHandle = 's-bottom';
+        targetHandle = 't-top';
+      } else {
+        sourceHandle = 's-top';
+        targetHandle = 't-bottom';
+      }
+    }
+
+    return {
+      ...edge,
+      sourceHandle,
+      targetHandle
+    };
+  });
+
+  return { nodes: layoutedNodes, edges: layoutedEdges };
 };
 
 function BoardInner({ 
@@ -245,58 +285,54 @@ function BoardInner({
   useEffect(() => {
     if (!newItems) return;
 
-    let addedNodesCount = 0;
+    // We need the absolute latest nodes/edges to perform a layout
+    // But since setNodes/setEdges is async, we combine them locally first
+    const currentNodes = getNodes();
+    const currentEdges = getEdges();
+    
+    const existingIds = new Set(currentNodes.map(n => n.id));
+    const addedNodes = (newItems.nodes || [])
+      .filter((n: any) => !existingIds.has(n.id))
+      .map((n: any) => ({
+        id: n.id,
+        type: n.type,
+        position: { x: 0, y: 0 },
+        data: { label: n.label, details: n.details }
+      }));
 
-    if (newItems.nodes && newItems.nodes.length > 0) {
-      setNodes((nds) => {
-        const existingIds = new Set(nds.map(n => n.id));
-        const addedNodes = newItems.nodes
-          .filter((n: any) => !existingIds.has(n.id))
-          .map((n: any, i: number) => ({
-            id: n.id,
-            type: n.type,
-            position: { x: 0, y: 0 }, // Position will be calculated by dagre
-            data: { label: n.label, details: n.details }
-          }));
-        addedNodesCount = addedNodes.length;
-        return [...nds, ...addedNodes];
-      });
-    }
+    if (addedNodes.length === 0 && (!newItems.edges || newItems.edges.length === 0)) return;
 
-    if (newItems.edges && newItems.edges.length > 0) {
-      setEdges((eds) => {
-        const existingEdgeIds = new Set(eds.map(e => `${e.source}-${e.target}`));
-        const addedEdges = newItems.edges
-          .filter((e: any) => !existingEdgeIds.has(`${e.source}-${e.target}`))
-          .map((e: any) => ({
-            id: `e-${e.source}-${e.target}`,
-            source: e.source,
-            target: e.target,
-            label: e.label,
-            type: 'default',
-            animated: true,
-            interactionWidth: 40,
-            data: { customColor: null, thickness: 3, dashed: false },
-            style: { stroke: isDarkMode ? '#94a3b8' : '#cbd5e1', strokeWidth: 3, strokeDasharray: 'none' }
-          }));
-        return [...eds, ...addedEdges];
-      });
-    }
+    const existingEdgeIds = new Set(currentEdges.map(e => `${e.source}-${e.target}`));
+    const addedEdges = (newItems.edges || [])
+      .filter((e: any) => !existingEdgeIds.has(`${e.source}-${e.target}`))
+      .map((e: any) => ({
+        id: `e-${e.source}-${e.target}`,
+        source: e.source,
+        target: e.target,
+        label: e.label,
+        type: 'default',
+        animated: true,
+        interactionWidth: 40,
+        data: { customColor: null, thickness: 3, dashed: false },
+        style: { stroke: isDarkMode ? '#94a3b8' : '#cbd5e1', strokeWidth: 3, strokeDasharray: 'none' }
+      }));
 
-    // Apply auto-layout if new items were added
-    if (addedNodesCount > 0) {
-      setTimeout(() => {
-        const currentNodes = getNodes();
-        const currentEdges = getEdges();
-        const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-          currentNodes,
-          currentEdges
-        );
-        setNodes(layoutedNodes);
-        setEdges(layoutedEdges);
-        setTimeout(() => fitView({ padding: 0.2, duration: 800 }), 50);
-      }, 50);
-    }
+    const finalNodes = [...currentNodes, ...addedNodes];
+    const finalEdges = [...currentEdges, ...addedEdges];
+
+    // Perform layout on the combined set
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
+      finalNodes,
+      finalEdges
+    );
+
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges);
+    
+    setTimeout(() => {
+      fitView({ padding: 0.2, duration: 800 });
+    }, 100);
+
   }, [newItems, setNodes, setEdges, isDarkMode, fitView, getNodes, getEdges]);
 
   // Update existing edges when dark mode changes

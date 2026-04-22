@@ -135,22 +135,22 @@ export function DetectiveNode({ id, data, type, selected }: any) {
         style={customColor ? { borderColor: customColor, backgroundColor: `${customColor}08` } : {}}
       >
         {/* Target Handles - All 4 Sides */}
-        <Handle type="target" position={Position.Top} id="t-top" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-30" />
-        <Handle type="target" position={Position.Bottom} id="t-bottom" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-30" />
-        <Handle type="target" position={Position.Left} id="t-left" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-30" />
-        <Handle type="target" position={Position.Right} id="t-right" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-30" />
+        <Handle type="target" position={Position.Top} id="t-top" className="w-5 h-5 !bg-transparent !border-none opacity-0 hover:opacity-100 transition-opacity z-30 before:absolute before:inset-0 before:bg-blue-400/20 before:rounded-full before:scale-0 hover:before:scale-150 before:transition-transform" />
+        <Handle type="target" position={Position.Bottom} id="t-bottom" className="w-5 h-5 !bg-transparent !border-none opacity-0 hover:opacity-100 transition-opacity z-30 before:absolute before:inset-0 before:bg-blue-400/20 before:rounded-full before:scale-0 hover:before:scale-150 before:transition-transform" />
+        <Handle type="target" position={Position.Left} id="t-left" className="w-5 h-5 !bg-transparent !border-none opacity-0 hover:opacity-100 transition-opacity z-30 before:absolute before:inset-0 before:bg-blue-400/20 before:rounded-full before:scale-0 hover:before:scale-150 before:transition-transform" />
+        <Handle type="target" position={Position.Right} id="t-right" className="w-5 h-5 !bg-transparent !border-none opacity-0 hover:opacity-100 transition-opacity z-30 before:absolute before:inset-0 before:bg-blue-400/20 before:rounded-full before:scale-0 hover:before:scale-150 before:transition-transform" />
 
         {/* Source Handles - All 4 Sides */}
-        <Handle type="source" position={Position.Top} id="s-top" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-20" />
-        <Handle type="source" position={Position.Bottom} id="s-bottom" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-20" />
-        <Handle type="source" position={Position.Left} id="s-left" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-20" />
-        <Handle type="source" position={Position.Right} id="s-right" className="w-3 h-3 opacity-0 hover:opacity-100 transition-opacity z-20" />
+        <Handle type="source" position={Position.Top} id="s-top" className="w-5 h-5 !bg-transparent !border-none opacity-0 hover:opacity-100 transition-opacity z-20 before:absolute before:inset-0 before:bg-blue-400/20 before:rounded-full before:scale-0 hover:before:scale-150 before:transition-transform" />
+        <Handle type="source" position={Position.Bottom} id="s-bottom" className="w-5 h-5 !bg-transparent !border-none opacity-0 hover:opacity-100 transition-opacity z-20 before:absolute before:inset-0 before:bg-blue-400/20 before:rounded-full before:scale-0 hover:before:scale-150 before:transition-transform" />
+        <Handle type="source" position={Position.Left} id="s-left" className="w-5 h-5 !bg-transparent !border-none opacity-0 hover:opacity-100 transition-opacity z-20 before:absolute before:inset-0 before:bg-blue-400/20 before:rounded-full before:scale-0 hover:before:scale-150 before:transition-transform" />
+        <Handle type="source" position={Position.Right} id="s-right" className="w-5 h-5 !bg-transparent !border-none opacity-0 hover:opacity-100 transition-opacity z-20 before:absolute before:inset-0 before:bg-blue-400/20 before:rounded-full before:scale-0 hover:before:scale-150 before:transition-transform" />
 
         {/* Visible Interaction Points (The "Four Points" the user sees) */}
-        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none" />
-        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none" />
-        <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none" />
-        <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none" />
+        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none group-hover:scale-125 group-hover:border-blue-400 transition-all shadow-sm" />
+        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none group-hover:scale-125 group-hover:border-blue-400 transition-all shadow-sm" />
+        <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none group-hover:scale-125 group-hover:border-blue-400 transition-all shadow-sm" />
+        <div className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-3 h-3 border border-[var(--color-border)] bg-[var(--color-cream)] rounded-full z-10 pointer-events-none group-hover:scale-125 group-hover:border-blue-400 transition-all shadow-sm" />
         <div className="flex items-center gap-2 mb-2">
           <div
             className={`w-7 h-7 rounded-lg flex items-center justify-center ${customColor ? '' : style.bg} ${customColor ? '' : style.darkBg}`}
