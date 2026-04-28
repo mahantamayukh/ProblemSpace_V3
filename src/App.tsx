@@ -33,6 +33,20 @@ type Message = {
   text: string;
 };
 
+function getLocalItem<T>(key: string, defaultValue: T): T {
+  if (typeof window === 'undefined') return defaultValue;
+  try {
+    const item = localStorage.getItem(key);
+    if (item === null) return defaultValue;
+    if (typeof defaultValue === 'string') return item as unknown as T;
+    if (typeof defaultValue === 'number') return Number(item) as unknown as T;
+    if (typeof defaultValue === 'boolean') return (item === 'true') as unknown as T;
+    return JSON.parse(item);
+  } catch (e) {
+    return defaultValue;
+  }
+}
+
 export default function App() {
   const { oauthToken, user, isAuthenticated, logout } = useAuth();
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -61,73 +75,41 @@ export default function App() {
   const sprint = useSprintState();
 
   // Chat state - keyed by phase+exercise context (persisted to localStorage)
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('problemspace-chat-messages');
-        if (saved) return JSON.parse(saved);
-      } catch (e) { }
-    }
-    return [{
+  const [messages, setMessages] = useState<Message[]>(() => getLocalItem('problemspace-chat-messages', [{
       id: 'initial',
       role: 'model',
       text: "Welcome to ProblemSpace. What's the complex problem we're breaking down today?"
-    }];
-  });
+    }]));
   const [isLoading, setIsLoading] = useState(false);
-  const [history, setHistory] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('problemspace-chat-history');
-        if (saved) return JSON.parse(saved);
-      } catch (e) { }
-    }
-    return [];
-  });
+  const [history, setHistory] = useState<any[]>(() => getLocalItem('problemspace-chat-history', []));
 
   // Board State
   const [boardItems, setBoardItems] = useState<any>(null);
 
   // New Features State
-  const [constraints, setConstraints] = useState<Constraint[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('problemspace-constraints-v1');
-        if (saved) return JSON.parse(saved);
-      } catch (e) { }
-    }
-    return [];
-  });
+  const [constraints, setConstraints] = useState<Constraint[]>(() => getLocalItem('problemspace-constraints-v1', []));
   const [showSignalScanner, setShowSignalScanner] = useState(false);
   const [simulatingPersona, setSimulatingPersona] = useState<any>(null);
   const [simulationSetupPersona, setSimulationSetupPersona] = useState<any>(null);
-  const [savedInterviews, setSavedInterviews] = useState<SavedInterview[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('problemspace-interviews-v1');
-        if (saved) return JSON.parse(saved);
-      } catch (e) { }
-    }
-    return [];
-  });
+  const [savedInterviews, setSavedInterviews] = useState<SavedInterview[]>(() => getLocalItem('problemspace-interviews-v1', []));
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [showThinkingModes, setShowThinkingModes] = useState(false);
   const [showFrameworkSelector, setShowFrameworkSelector] = useState(false);
   const [isIntelligenceHubOpen, setIsIntelligenceHubOpen] = useState(false);
-  const [userApiKey, setUserApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-user-api-key') || '' : ''));
-  const [anthropicApiKey, setAnthropicApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-anthropic-api-key') || '' : ''));
-  const [sessionSummary, setSessionSummary] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-session-summary-v1') || '' : ''));
-  const [summaryFrequency, setSummaryFrequency] = useState(() => (typeof window !== 'undefined' ? Number(localStorage.getItem('problemspace-summary-freq') || '10') : 10));
+  const [userApiKey, setUserApiKey] = useState(() => getLocalItem('problemspace-user-api-key', ''));
+  const [anthropicApiKey, setAnthropicApiKey] = useState(() => getLocalItem('problemspace-anthropic-api-key', ''));
+  const [sessionSummary, setSessionSummary] = useState<string>(() => getLocalItem('problemspace-session-summary-v1', ''));
+  const [summaryFrequency, setSummaryFrequency] = useState(() => getLocalItem('problemspace-summary-freq', 10));
   const [pendingSummary, setPendingSummary] = useState('');
   const [showSummaryEditModal, setShowSummaryEditModal] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [boardToDelete, setBoardToDelete] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [aiModel, setAiModel] = useState<string>(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-ai-model') || 'gemini-2.0-flash' : 'gemini-2.0-flash'));
+  const [aiModel, setAiModel] = useState<string>(() => getLocalItem('problemspace-ai-model', 'gemini-2.0-flash'));
   const [isNeuralViewOpen, setIsNeuralViewOpen] = useState(false);
-  const [customBaseUrl, setCustomBaseUrl] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-base-url') || 'https://api.openai.com/v1' : 'https://api.openai.com/v1'));
-  const [customModelName, setCustomModelName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-model-name') || 'gpt-4o' : 'gpt-4o'));
-  const [universalApiKey, setUniversalApiKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('problemspace-universal-api-key') || '' : ''));
+  const [customBaseUrl, setCustomBaseUrl] = useState(() => getLocalItem('problemspace-custom-base-url', 'https://api.openai.com/v1'));
+  const [customModelName, setCustomModelName] = useState(() => getLocalItem('problemspace-custom-model-name', 'gpt-4o'));
+  const [universalApiKey, setUniversalApiKey] = useState(() => getLocalItem('problemspace-universal-api-key', ''));
 
 
   // Local state for manual node editing (to prevent focus loss and lag)
@@ -161,22 +143,15 @@ export default function App() {
 
   type BoardData = { id: string; name: string; nodes: any[]; edges: any[]; };
   const [projectBoards, setProjectBoards] = useState<BoardData[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('problemspace-project-boards-v4');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (!parsed.find((b: any) => b.id === 'ai-memory')) {
-            parsed.push({ id: 'ai-memory', name: 'Neural Memory', nodes: [], edges: [] });
-          }
-          return parsed;
-        }
-      } catch (e) { }
-    }
-    return [
+    const defaultBoards = [
       { id: 'default', name: 'Welcome Workspace', nodes: STARTER_NODES, edges: STARTER_EDGES },
       { id: 'ai-memory', name: 'Neural Memory', nodes: [], edges: [] }
     ];
+    const savedBoards = getLocalItem('problemspace-project-boards-v4', defaultBoards);
+    if (!savedBoards.find((b: any) => b.id === 'ai-memory')) {
+      savedBoards.push({ id: 'ai-memory', name: 'Neural Memory', nodes: [], edges: [] });
+    }
+    return savedBoards;
   });
 
   const [activeBoardId, setActiveBoardId] = useState<string>('default');
