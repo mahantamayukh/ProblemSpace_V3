@@ -1,111 +1,48 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Zap, Target, ArrowRight, Loader2, Moon, Sun } from 'lucide-react';
 import { NeuronIcon } from './ui/NeuronIcon';
 import { useAuth } from '../lib/AuthContext';
+import { EtheralShadow } from './ui/etheral-shadow';
+import { useState } from 'react';
 
 const FEATURES = [
   { icon: NeuronIcon, label: 'Neural Memory', desc: 'AI that learns your thinking style across every session' },
   { icon: Target, label: 'Deep Discovery', desc: '12+ frameworks — from IDEO to Amazon Working Backwards' },
-  { icon: Zap, label: 'Gemini Powered', desc: 'Your Google account. Your AI. Zero setup.' },
+  { icon: Zap, label: 'Multi-Model AI', desc: 'Plug in Gemini, Claude, or any OpenAI-compatible engine.' },
 ];
 
 export default function LoginOverlay({ isDarkMode, toggleDarkMode }: { isDarkMode: boolean, toggleDarkMode: () => void }) {
   const { login, isLoading } = useAuth();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Animated particle field
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animFrame: number;
-    const particles: Array<{ x: number; y: number; vx: number; vy: number; size: number; alpha: number }> = [];
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    for (let i = 0; i < 60; i++) {
-      particles.push({
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        size: Math.random() * 2.5 + 1,
-        alpha: Math.random() * 0.6 + 0.3,
-      });
-    }
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const isDark = document.documentElement.classList.contains('dark');
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = canvas.width;
-        if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height;
-        if (p.y > canvas.height) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-
-        // Green in dark mode, darker beige in light mode to contrast against cream
-        ctx.fillStyle = isDark ? `rgba(16, 185, 129, ${p.alpha * 1.5})` : `rgba(145, 135, 125, ${p.alpha * 1.5})`;
-        ctx.fill();
-      });
-      // Draw soft connecting lines
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 140) {
-            ctx.beginPath();
-            ctx.strokeStyle = isDark
-              ? `rgba(16, 185, 129, ${0.3 * (1 - dist / 140)})`
-              : `rgba(145, 135, 125, ${0.4 * (1 - dist / 140)})`;
-            ctx.lineWidth = 0.8;
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-      animFrame = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animFrame);
-      window.removeEventListener('resize', resize);
-    };
-  }, [isDarkMode]);
 
   return (
-    <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-[var(--color-cream)] transition-colors duration-500">
+    <div className={`relative min-h-screen w-full flex items-center justify-center overflow-hidden transition-colors duration-500 ${isDarkMode ? 'bg-neutral-950' : 'bg-[var(--color-cream)]'}`}>
       
+      {/* Absolute Background Shadow Effect */}
+      <div className="absolute inset-0 z-0 opacity-100 pointer-events-none">
+        <EtheralShadow
+          color={isDarkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(100, 100, 90, 0.12)"}
+          animation={{ scale: 100, speed: 40 }}
+          noise={{ opacity: 0.2, scale: 1.2 }}
+          className="w-full h-full"
+        >
+          <></>
+        </EtheralShadow>
+      </div>
+
       {/* Dark mode toggle header */}
       <div className="absolute top-0 right-0 p-6 z-50">
         <button
           onClick={toggleDarkMode}
-          className="w-10 h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-cream)] flex items-center justify-center hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)] hover:shadow-sm transition-all shadow-sm"
+          className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all shadow-sm ${
+            isDarkMode 
+              ? 'border-neutral-800 bg-neutral-900 text-white hover:bg-neutral-800' 
+              : 'border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-ink)] hover:bg-[var(--color-cream-warm)]'
+          }`}
         >
           {isDarkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
         </button>
       </div>
-
-      {/* Particle canvas */}
-      <canvas ref={canvasRef} className="absolute inset-0 z-0" />
-
-      {/* Gradient orbs - updated to use CSS variables for mode matching */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-[var(--color-sage)] opacity-10 blur-[120px] pointer-events-none z-0" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-[var(--color-lavender)] opacity-10 blur-[100px] pointer-events-none z-0" />
 
       {/* Main card */}
       <motion.div

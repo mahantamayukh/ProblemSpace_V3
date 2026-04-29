@@ -2,17 +2,9 @@ import { useState, useRef, useCallback } from 'react';
 import UserProfileDropdown from './UserProfileDropdown';
 import { ArrowRight, Sparkles, Diamond, Search, Moon, Sun, Zap, HelpCircle, Footprints, Compass, Lightbulb, TrendingDown, Target, History, ShieldCheck, X, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Canvas } from '@react-three/fiber';
-import GrainyGradient from './ui/gradient-shader-card';
+import { EtheralShadow } from './ui/etheral-shadow';
 import IntelligenceHubModal from './IntelligenceHubModal';
 import ApiGuideModal from './ApiGuideModal';
-
-interface Ripple {
-  id: number;
-  x: number;
-  y: number;
-  startTime: number;
-}
 
 interface WorkspaceConfig {
   frequency: number;
@@ -38,34 +30,6 @@ export default function LandingPage({ onStart, isDarkMode, toggleDarkMode }: { o
     } else {
       setShowConfig(true);
     }
-  };
-
-  // Shader Interaction State
-  const [ripples, setRipples] = useState<Ripple[]>([]);
-  const [currentTime, setCurrentTime] = useState(0);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const rippleIdRef = useRef(0);
-
-  const handleTimeUpdate = useCallback((time: number) => {
-    setCurrentTime(time);
-  }, []);
-
-  const handleShaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const newRipple: Ripple = {
-      id: rippleIdRef.current++,
-      x,
-      y,
-      startTime: currentTime,
-    };
-    setRipples(prev => [...prev, newRipple]);
-    setTimeout(() => {
-      setRipples(prev => prev.filter(ripple => ripple.id !== newRipple.id));
-    }, 2000);
   };
 
   return (
@@ -104,51 +68,50 @@ export default function LandingPage({ onStart, isDarkMode, toggleDarkMode }: { o
       </header>
 
       {/* Hero */}
-      <main
-        ref={cardRef}
-        onClick={handleShaderClick}
-        className="flex-1 flex flex-col items-center justify-center p-6 text-center relative z-10 cursor-pointer w-full min-h-[100vh] overflow-hidden"
-      >
-        {/* Opaque base layer to block global dots from showing through the shader */}
-        <div className="absolute inset-0 z-[-2] bg-[var(--color-cream)] transition-colors" />
-        
-        {/* Absolute Background Shader */}
-        <div className="absolute inset-0 z-[-1] opacity-60 dark:opacity-80 mix-blend-normal">
-          <Canvas camera={{ position: [0, 0, 1] }} gl={{ preserveDrawingBuffer: true }} dpr={[1, 2]}>
-            <GrainyGradient ripples={ripples} onTimeUpdate={handleTimeUpdate} isDarkMode={isDarkMode} />
-          </Canvas>
-        </div>
+      <main className={`flex-1 flex flex-col relative z-10 w-full min-h-[100vh] overflow-hidden transition-colors duration-500 ${isDarkMode ? 'bg-neutral-950' : 'bg-[var(--color-cream)]'}`}>
+        <EtheralShadow
+          color={isDarkMode ? "rgba(255, 255, 255, 0.2)" : "rgba(100, 100, 90, 0.15)"}
+          animation={{ scale: 100, speed: 45 }}
+          noise={{ opacity: 0.3, scale: 1.2 }}
+          className="w-full h-full min-h-[100vh]"
+        >
+          <div className="max-w-4xl mx-auto space-y-8 px-6 pt-24 pb-32">
+            <div className={`inline-flex items-center gap-2 px-4 py-2 backdrop-blur-sm border rounded-full text-sm font-medium mb-4 shadow-sm transition-all mx-auto relative z-30 ${
+              isDarkMode 
+                ? 'bg-purple-500/10 border-purple-500/30 text-purple-300 hover:bg-purple-500/20' 
+                : 'bg-[var(--color-lavender-light)]/80 border-[var(--color-lavender)] text-purple-700 hover:bg-[var(--color-lavender-light)]'
+            }`}>
+              <Zap className="w-3.5 h-3.5" />
+              <span>Problem Discovery & Brainstorming</span>
+            </div>
 
+            <h1 className={`text-5xl md:text-8xl font-sans font-bold tracking-tight leading-[1.1] relative z-30 drop-shadow-sm transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-[var(--color-ink)]'}`}>
+              Untangle the <br />
+              <span className={`font-mono font-medium tracking-tight ${isDarkMode ? 'text-neutral-400' : 'text-[var(--color-ink-light)]'}`}>problemspace.</span>
+            </h1>
 
+            <p className={`text-base md:text-xl max-w-2xl leading-relaxed mx-auto relative z-30 transition-colors duration-500 ${isDarkMode ? 'text-neutral-400' : 'text-[var(--color-ink-light)]'}`}>
+              A flexible visual workspace built for <span className={`${isDarkMode ? 'text-white' : 'text-[var(--color-ink)]'} font-semibold`}>blindspot discovery</span>, <span className={`${isDarkMode ? 'text-white' : 'text-[var(--color-ink)]'} font-semibold`}>team alignment</span>, and <span className={`${isDarkMode ? 'text-white' : 'text-[var(--color-ink)]'} font-semibold`}>decision clarity</span>. Untangle your problems before you build.
+            </p>
 
-        <div className="max-w-4xl mx-auto space-y-8 relative z-10 pt-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-lavender-light)]/80 backdrop-blur-sm border border-[var(--color-lavender)] rounded-full text-sm font-medium mb-4 text-purple-700 dark:text-purple-300 shadow-sm transition-all hover:bg-[var(--color-lavender-light)]">
-            <Zap className="w-3.5 h-3.5" />
-            <span>Problem Discovery & Brainstorming</span>
+            <div className="pt-8 relative z-30">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); 
+                  handleStartRequest();
+                }}
+                className={`group relative inline-flex items-center justify-center gap-3 px-10 py-5 font-semibold rounded-2xl border transition-all active:translate-y-0 text-lg ${
+                  isDarkMode 
+                    ? 'bg-white text-black border-white shadow-2xl hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:-translate-y-1' 
+                    : 'bg-[var(--color-ink)] text-[var(--color-cream)] border-[var(--color-ink)] shadow-xl hover:shadow-2xl hover:-translate-y-1'
+                }`}
+              >
+                <span>Initialize Workspace</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
           </div>
-
-          <h1 className="text-5xl md:text-7xl font-sans font-bold tracking-tight leading-[1.1]">
-            Untangle the <br />
-            <span className="font-mono font-medium tracking-tight text-[var(--color-ink)]">problemspace.</span>
-          </h1>
-
-          <p className="text-base md:text-lg text-[var(--color-ink-light)] max-w-2xl leading-relaxed">
-            A flexible visual workspace built for <span className="text-[var(--color-ink)] font-semibold">blindspot discovery</span>, <span className="text-[var(--color-ink)] font-semibold">team alignment</span>, and <span className="text-[var(--color-ink)] font-semibold">decision clarity</span>. Untangle your problems before you build.
-          </p>
-
-          <div className="pt-8">
-            <button
-              onClick={(e) => {
-                e.stopPropagation(); 
-                handleStartRequest();
-              }}
-              className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-[var(--color-ink)] text-[var(--color-cream)] text-base font-semibold rounded-2xl border border-[var(--color-ink)] shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all active:translate-y-0"
-            >
-              <span>Initialize Workspace</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-        </div>
+        </EtheralShadow>
       </main>
 
       {/* Feature Cards */}

@@ -1,10 +1,20 @@
 import { Handle, Position } from '@xyflow/react';
-import { Image as ImageIcon, Upload } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { Image as ImageIcon, Upload, Sparkles, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 
 export function ImageNode({ data, id }: any) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Listen for generation complete to turn off loading state
+  useEffect(() => {
+    const handleComplete = (e: any) => {
+      if (e.detail?.id === id) setIsGenerating(false);
+    };
+    window.addEventListener('prototype-generate-complete', handleComplete);
+    return () => window.removeEventListener('prototype-generate-complete', handleComplete);
+  }, [id]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -18,6 +28,12 @@ export function ImageNode({ data, id }: any) {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleGenerate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsGenerating(true);
+    window.dispatchEvent(new CustomEvent('prototype-generate-action', { detail: { id } }));
   };
 
   return (
@@ -59,6 +75,15 @@ export function ImageNode({ data, id }: any) {
           className="text-xs font-semibold bg-transparent border-none focus:outline-none flex-1 text-[var(--color-ink)] placeholder:text-[var(--color-ink-muted)]"
           placeholder="Image Title..."
         />
+        <button
+          onClick={handleGenerate}
+          disabled={isGenerating}
+          className="p-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
+          title="Generate Prototype from Connections"
+        >
+          {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+          <span>Prototype</span>
+        </button>
       </div>
 
       {/* Content */}

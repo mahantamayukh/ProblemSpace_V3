@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Sparkles, User, Bot, LayoutDashboard, Target, X, Home, Moon, Sun, Trash2, FileText, RotateCcw, Plus, Radio, Brain, RefreshCw, Link, UserPlus, Heart, ShieldAlert, Lightbulb, Database, Settings,
-  Footprints, MessageCircle, LayoutGrid, Zap, Swords, PenTool, ArrowRight, Workflow, Layers, FolderCode, FlaskConical, ChevronLeft, ChevronRight
+  Footprints, MessageCircle, LayoutGrid, Zap, Swords, PenTool, ArrowRight, Workflow, Layers, FolderCode, FlaskConical, ChevronLeft, ChevronRight, HelpCircle
 } from 'lucide-react';
 import { NeuronIcon } from './components/ui/NeuronIcon';
 import Markdown from 'react-markdown';
-import { generateNextResponse, generateNodeRefinementResponse, getInitialMessage, flipFailureNodes, scanSignal, synthesizeInterviewsToNode, generateSessionSummary, synthesizeTargetNode } from './lib/gemini';
+import { generateNextResponse, generateNodeRefinementResponse, getInitialMessage, scanSignal, synthesizeInterviewsToNode, generateSessionSummary, synthesizeTargetNode, classifyAndEnrichNode, generateEmergentSynthesis, generatePrototypeImage } from './lib/gemini';
 import Board from './components/Board';
 import LandingPage from './components/LandingPage';
 import FrameworkSelector from './components/FrameworkSelector';
@@ -117,17 +117,27 @@ export default function App() {
   const [localDetails, setLocalDetails] = useState('');
   const [isNodeEditDirty, setIsNodeEditDirty] = useState(false);
 
+  // [NODEPAD FEATURE] Emergent Synthesis State
+  const [emergentSynthesis, setEmergentSynthesis] = useState<string | null>(null);
+  const [showSynthesisHelp, setShowSynthesisHelp] = useState(false);
+  const [lastSynthesisNodeCount, setLastSynthesisNodeCount] = useState<number>(5);
 
-  // Auto-open Settings after login if required API key is missing for current provider
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    const needsGeminiKey = !aiModel.startsWith('claude-') && aiModel !== 'universal' && !userApiKey;
-    const needsAnthropicKey = aiModel.startsWith('claude-') && !anthropicApiKey;
-    const needsUniversalKey = aiModel === 'universal' && !userApiKey;
-    if (needsGeminiKey || needsAnthropicKey || needsUniversalKey) {
-      setIsIntelligenceHubOpen(true);
-    }
-  }, [isAuthenticated, aiModel, userApiKey, anthropicApiKey]);
+  // Node Focus State
+  const [selectedNode, setSelectedNode] = useState<any>(null);
+  const [updatedNodes, setUpdatedNodes] = useState<any[]>([]);
+  const clearUpdatedNodes = useCallback(() => setUpdatedNodes([]), []);
+
+  const [deletedNodeId, setDeletedNodeId] = useState<string | undefined>(undefined);
+  const [nodeMessages, setNodeMessages] = useState<Record<string, Message[]>>({});
+  const [nodeHistory, setNodeHistory] = useState<Record<string, any[]>>({});
+  const [isNodeLoading, setIsNodeLoading] = useState(false);
+
+  // Edge Focus State
+  const [selectedEdge, setSelectedEdge] = useState<any>(null);
+  const [updatedEdge, setUpdatedEdge] = useState<any>(null);
+  const clearUpdatedEdge = useCallback(() => setUpdatedEdge(null), []);
+  const [deletedEdgeId, setDeletedEdgeId] = useState<string | undefined>(undefined);
+
 
   const STARTER_NODES = [
     { id: 'start-problem', type: 'problem', position: { x: 0, y: 0 }, data: { label: 'Defining the Core Challenge', details: 'What is the absolute root cause of the friction we see?' } },
@@ -162,9 +172,74 @@ export default function App() {
     edges: initialBoard.edges
   });
 
-  // Board nodes ref to pass to summary and save state
   const [boardNodesSnapshot, setBoardNodesSnapshot] = useState<any[]>(initialBoard.nodes);
   const [boardEdgesSnapshot, setBoardEdgesSnapshot] = useState<any[]>(initialBoard.edges);
+
+
+  // Auto-open Settings after login if required API key is missing for current provider
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const needsGeminiKey = !aiModel.startsWith('claude-') && aiModel !== 'universal' && !userApiKey;
+    const needsAnthropicKey = aiModel.startsWith('claude-') && !anthropicApiKey;
+    const needsUniversalKey = aiModel === 'universal' && !userApiKey;
+    if (needsGeminiKey || needsAnthropicKey || needsUniversalKey) {
+      setIsIntelligenceHubOpen(true);
+    }
+  }, [isAuthenticated, aiModel, userApiKey, anthropicApiKey]);
+
+  // Handle Image Node Prototype Generation
+  const snapshotsRef = useRef({ nodes: boardNodesSnapshot, edges: boardEdgesSnapshot });
+  useEffect(() => {
+    snapshotsRef.current = { nodes: boardNodesSnapshot, edges: boardEdgesSnapshot };
+  }, [boardNodesSnapshot, boardEdgesSnapshot]);
+
+  useEffect(() => {
+    const handlePrototypeAction = async (e: any) => {
+      const { id } = e.detail;
+      const { nodes, edges } = snapshotsRef.current;
+      const node = nodes.find(n => n.id === id);
+      
+      if (!node || node.type !== 'image-node') {
+        window.dispatchEvent(new CustomEvent('prototype-generate-complete', { detail: { id } }));
+        return;
+      }
+
+      // Find all source nodes connected to this image node
+      const incomingEdges = edges.filter(edge => edge.target === id);
+      const sourceNodes = incomingEdges
+        .map(edge => nodes.find(n => n.id === edge.source))
+        .filter((n): n is any => !!n);
+
+      // Synthesize prompt from connected nodes
+      const contextText = sourceNodes.length > 0 
+        ? sourceNodes.map(n => `${n.data.label}: ${n.data.details}`).join('\n')
+        : node.data.label;
+
+      try {
+        const imageUrl = await generatePrototypeImage(
+          contextText,
+          universalApiKey,
+          customBaseUrl
+        );
+
+        setUpdatedNodes([{ id, data: { ...node.data, imageUrl } }]);
+        if (selectedNode?.id === id) {
+          setSelectedNode((prev: any) => prev ? { ...prev, data: { ...prev.data, imageUrl } } : null);
+        }
+      } catch (err: any) {
+        console.error("Prototype generation failed:", err);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        alert(errorMessage || "Failed to generate prototype.");
+      } finally {
+        window.dispatchEvent(new CustomEvent('prototype-generate-complete', { detail: { id } }));
+      }
+    };
+
+    window.addEventListener('prototype-generate-action', handlePrototypeAction);
+    return () => window.removeEventListener('prototype-generate-action', handlePrototypeAction);
+  }, [universalApiKey, customBaseUrl, selectedNode?.id]);
+
+
 
 
   // Synchronize snapshots back to active board state on a slight denounce (so we don't block too hard)
@@ -178,6 +253,27 @@ export default function App() {
     }, 1000);
     return () => clearTimeout(timer);
   }, [boardNodesSnapshot, boardEdgesSnapshot, activeBoardId]);
+
+  // [NODEPAD FEATURE] Background Emergent Synthesis
+  useEffect(() => {
+    if (!isAuthenticated || !hasStarted || isIntelligenceHubOpen || activeBoardId === 'ai-memory' || boardNodesSnapshot.length < 5) return;
+    
+    if (boardNodesSnapshot.length - lastSynthesisNodeCount >= 5) {
+      setLastSynthesisNodeCount(boardNodesSnapshot.length);
+      generateEmergentSynthesis(
+        boardNodesSnapshot,
+        userApiKey,
+        aiModel,
+        anthropicApiKey,
+        oauthToken,
+        customBaseUrl,
+        customModelName,
+        universalApiKey
+      ).then(synthesis => {
+        if (synthesis) setEmergentSynthesis(synthesis);
+      });
+    }
+  }, [boardNodesSnapshot.length, lastSynthesisNodeCount, activeBoardId, userApiKey, aiModel, anthropicApiKey, oauthToken, customBaseUrl, customModelName, universalApiKey]);
 
   // Multi-Board Functions
   const handleSwitchBoard = (id: string) => {
@@ -340,21 +436,7 @@ export default function App() {
     setBoardToDelete(null);
   };
 
-  // Node Focus State
-  const [selectedNode, setSelectedNode] = useState<any>(null);
-  const [updatedNodes, setUpdatedNodes] = useState<any[]>([]);
-  const clearUpdatedNodes = useCallback(() => setUpdatedNodes([]), []);
 
-  const [deletedNodeId, setDeletedNodeId] = useState<string | undefined>(undefined);
-  const [nodeMessages, setNodeMessages] = useState<Record<string, Message[]>>({});
-  const [nodeHistory, setNodeHistory] = useState<Record<string, any[]>>({});
-  const [isNodeLoading, setIsNodeLoading] = useState(false);
-
-  // Edge Focus State
-  const [selectedEdge, setSelectedEdge] = useState<any>(null);
-  const [updatedEdge, setUpdatedEdge] = useState<any>(null);
-  const clearUpdatedEdge = useCallback(() => setUpdatedEdge(null), []);
-  const [deletedEdgeId, setDeletedEdgeId] = useState<string | undefined>(undefined);
 
   // Responsive Window Size Tracking
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
@@ -535,37 +617,7 @@ export default function App() {
     }
   };
 
-  const handleFlipFailures = async () => {
-    const failureNodes = boardNodesSnapshot.filter(n => n.type === 'failure');
-    if (failureNodes.length === 0) {
-      alert("No failure nodes found to flip!");
-      return;
-    }
 
-    setIsLoading(true);
-    setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', text: "[System: Flip all failures into positive insights]" }]);
-
-    try {
-      const text = await flipFailureNodes(
-        failureNodes.map(n => ({ id: n.id, label: n.data.label, details: n.data.details })),
-        (data) => setBoardItems(data),
-        userApiKey,
-        aiModel,
-        anthropicApiKey,
-        undefined, // oauthToken
-        aiModel === 'universal' ? customBaseUrl : undefined,
-        aiModel === 'universal' ? customModelName : undefined,
-        universalApiKey,
-        boardNodesSnapshot
-      );
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: `🔄 **Success!** ${text}` }]);
-    } catch (err) {
-      console.error(err);
-      alert("Flip failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handlePersonaPin = (nodeData: any) => {
     setBoardItems({ nodes: [nodeData], edges: [] });
@@ -585,6 +637,32 @@ export default function App() {
 
   const handleRenameInterview = (sessionId: string, newLabel: string) => {
     setSavedInterviews(prev => prev.map(iv => iv.id === sessionId ? { ...iv, customLabel: newLabel } : iv));
+  };
+
+  const handleResetSession = () => {
+    if (window.confirm("Start a brand new conversation? This will clear the current chat history and wipe the AI's 'Neural Memory' scratchpad, giving you a completely independent fresh start.")) {
+      // 1. Clear Chat
+      setMessages([{
+        id: 'initial',
+        role: 'model',
+        text: "Workspace reset. I've cleared the chat and forgotten previous neural context. What's the new complex challenge we're tackling today?"
+      }]);
+      setHistory([]);
+      
+      // 2. Clear AI Memory Board
+      setProjectBoards(prev => prev.map(b => 
+        b.id === 'ai-memory' ? { ...b, nodes: [], edges: [] } : b
+      ));
+      
+      // 3. Clear Canvas Snapshot if currently on memory board
+      if (activeBoardId === 'ai-memory') {
+        setBoardItems({ nodes: [], edges: [] });
+      }
+
+      // 4. Update persistence immediately
+      localStorage.removeItem('problemspace-chat-messages');
+      localStorage.removeItem('problemspace-chat-history');
+    }
   };
 
   const handleSynthesizeInterviews = async (nodeId: string, personaLabel: string) => {
@@ -806,6 +884,43 @@ export default function App() {
     // Dispatch update to board
     setUpdatedNodes([{ id: nodeId, data: updateData }]);
     setIsNodeEditDirty(false);
+
+    // [NODEPAD FEATURE] Background AI enrichment and connection inference
+    if (localLabel !== 'New Note' && localLabel !== '') {
+      classifyAndEnrichNode(
+        nodeId,
+        `${localLabel} - ${localDetails}`,
+        boardNodesSnapshot,
+        (enrichedData) => {
+          // Update the node with the new type and appended annotation
+          setUpdatedNodes([{ 
+            id: nodeId, 
+            type: enrichedData.type,
+            data: { 
+              details: localDetails + (localDetails ? '\n\n' : '') + `[AI Annotation]: ${enrichedData.annotation}` 
+            } 
+          }]);
+          
+          // Add suggested connections as inferred edges
+          if (enrichedData.suggestedConnections && enrichedData.suggestedConnections.length > 0) {
+            const newEdges = enrichedData.suggestedConnections.map((targetId: string) => ({
+              source: nodeId,
+              target: targetId,
+              label: 'Inferred',
+              data: { dashed: true, customColor: '#9B87C9', thickness: 2 } // Visual distinction for inferred edges
+            }));
+            setBoardItems({ nodes: [], edges: newEdges });
+          }
+        },
+        userApiKey,
+        aiModel,
+        anthropicApiKey,
+        oauthToken,
+        customBaseUrl,
+        customModelName,
+        universalApiKey
+      );
+    }
   };
 
   // Not wrapped in useCallback — handleSend captures current state each render,
@@ -861,7 +976,9 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-[var(--color-cream-warm)] text-neutral-900 dark:text-neutral-100 font-sans overflow-hidden transition-colors">
+    <div 
+      className="flex h-screen w-full bg-[var(--color-cream-warm)] text-neutral-900 dark:text-neutral-100 font-sans overflow-hidden transition-colors relative"
+    >
       <AnimatePresence>
         {isIntelligenceHubOpen && (
           <IntelligenceHubModal
@@ -981,6 +1098,13 @@ export default function App() {
                     <Link className="w-4 h-4" />
                   </button>
                   <button
+                    onClick={handleResetSession}
+                    title="Reset Session (Clear Chat & Neural Memory)"
+                    className="w-8 h-8 rounded-lg hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 text-[var(--color-ink)] flex items-center justify-center transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => setIsDarkMode(!isDarkMode)}
                     title="Toggle Light/Dark Mode"
                     className="w-8 h-8 rounded-lg hover:bg-[var(--color-cream-warm)] text-[var(--color-ink)] flex items-center justify-center transition-all"
@@ -1065,14 +1189,6 @@ export default function App() {
             <div className="p-4 border-t border-[var(--color-border)] bg-[var(--color-cream)] transition-colors space-y-3">
               {/* Action Context Buttons */}
               <div className="flex flex-wrap gap-2">
-                {sprint.activeExercise === 'reverse-brainstorm' && (
-                  <button
-                    onClick={handleFlipFailures}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-[10px] font-bold uppercase tracking-widest border border-[var(--color-border)] shadow-sm  hover:-translate-y-0.5 transition-all"
-                  >
-                    <RefreshCw className="w-3 h-3" /> Flip All Failures
-                  </button>
-                )}
               </div>
               <PromptInputBox
                 onSend={(message) => handleSend(message)}
@@ -1157,6 +1273,7 @@ export default function App() {
                     )}
                   </AnimatePresence>
                 }
+
                 onExplorationClick={() => setShowFrameworkSelector(!showFrameworkSelector)}
                 isExplorationActive={showFrameworkSelector || (sprint.activeExercise !== null && sprint.activeExercise !== 'scratch')}
                 explorationIcon={(() => {
@@ -1191,7 +1308,6 @@ export default function App() {
                       sprint.setActiveExercise(id);
                       setShowFrameworkSelector(false);
                     }}
-                    customExercises={sprint.exercises.filter(ex => ex.isCustom && !ex.id.startsWith('think-'))}
                     onAddCustom={sprint.addCustomExercise}
                   />
                 }
@@ -1345,6 +1461,19 @@ export default function App() {
                             <option key={opt.value} value={opt.value}>{opt.label.toUpperCase()}</option>
                           ))}
                         </select>
+                        {selectedNode.type === 'custom' && (
+                          <input
+                            type="text"
+                            value={selectedNode.data?.customTypeName || ''}
+                            onChange={(e) => {
+                              const newName = e.target.value;
+                              setSelectedNode({ ...selectedNode, data: { ...selectedNode.data, customTypeName: newName } });
+                              setUpdatedNodes([{ id: selectedNode.id, data: { customTypeName: newName } }]);
+                            }}
+                            placeholder="Type a custom name..."
+                            className="text-xs font-semibold text-[var(--color-ink)] bg-[var(--color-cream-warm)] border border-[var(--color-border)] rounded-lg px-2 py-1 mt-1 w-full outline-none focus:border-purple-400 transition-colors"
+                          />
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -1876,6 +2005,90 @@ export default function App() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+      {/* [NODEPAD FEATURE] Global Emergent Synthesis Popup */}
+      <AnimatePresence>
+        {emergentSynthesis && isAuthenticated && hasStarted && !isIntelligenceHubOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed bottom-12 right-12 z-[100] max-w-md w-full shadow-2xl pointer-events-auto"
+          >
+            <div className="bg-white dark:bg-neutral-900 border border-purple-200 dark:border-purple-500/30 rounded-3xl overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(168,85,247,0.15)]">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-purple-50 via-fuchsia-50 to-blue-50 dark:from-purple-900/20 dark:via-fuchsia-900/20 dark:to-blue-900/20 px-6 py-4 flex items-center justify-between border-b border-purple-100 dark:border-purple-800/30">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-purple-500 text-white rounded-lg shadow-lg shadow-purple-500/20">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-purple-700 dark:text-purple-300">Emergent Synthesis</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setShowSynthesisHelp(!showSynthesisHelp)}
+                    className="p-1.5 hover:bg-black/5 dark:hover:bg-white/5 text-neutral-400 dark:text-neutral-500 transition-colors rounded-full"
+                    title="What is this?"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => setEmergentSynthesis(null)}
+                    className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/30 text-neutral-400 hover:text-red-500 transition-colors rounded-full"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Help Overlay */}
+              <AnimatePresence>
+                {showSynthesisHelp && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-purple-600 text-white px-6 py-4 text-xs leading-relaxed font-medium"
+                  >
+                    <p>Emergent Synthesis occurs when the AI detects a new, overarching pattern across your board. It bridges disconnected nodes to surface a "higher truth" or strategic shift you might have missed.</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Content */}
+              <div className="p-8 relative">
+                <div className="absolute top-4 left-4 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+                  <Sparkles className="w-32 h-32 text-purple-500" />
+                </div>
+                <div className="relative z-10 italic text-lg font-serif leading-relaxed text-neutral-800 dark:text-neutral-100">
+                  "{emergentSynthesis}"
+                </div>
+              </div>
+
+              {/* Action */}
+              <div className="px-8 pb-8 flex justify-end">
+                <button
+                  onClick={() => {
+                    setBoardItems({ 
+                      nodes: [{ 
+                        id: `node-${Date.now()}`, 
+                        type: 'insight', 
+                        position: { x: window.innerWidth/2 - 100, y: window.innerHeight/2 - 50 }, 
+                        data: { label: 'Synthesized Insight', details: emergentSynthesis } 
+                      }], 
+                      edges: [] 
+                    });
+                    setEmergentSynthesis(null);
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 dark:bg-white text-white dark:text-black rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl"
+                >
+                  <Plus className="w-4 h-4" />
+                  Capture Insight
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

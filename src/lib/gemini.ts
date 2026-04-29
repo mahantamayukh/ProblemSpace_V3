@@ -333,15 +333,15 @@ export async function testAIConnection(config: {
 
 const ALL_NODE_TYPES = [
   'problem', 'insight', 'audience', 'constraint', 'sticky',
-  'hmw', 'rose', 'thorn', 'bud', 'competitor',
-  'journey-step', 'principle', 'metric', 'tweet',
+  'hmw', 'custom', 'competitor',
+  'journey-step', 'principle', 'metric',
   'journey-header', 'empathy-says', 'empathy-thinks', 'empathy-does', 'empathy-feels', 'image-node',
   'failure', 'signal'
 ];
 
 export const addBoardItemsDeclaration: FunctionDeclaration = {
   name: "addBoardItems",
-  description: "Extracts key concepts from the conversation and adds them as NEW nodes to the visual board. Call this when new insights, problems, audiences, constraints etc. are discovered. BREVITY: Keep 'details' extremely short (2-3 sentences max). DEDUPLICATION: Check the existing board nodes before calling this. If a node with similar info exists, DO NOT create it. TYPE DIVERSITY: Use a variety of node types (e.g., hmw, rose, metric, journey-step) to make the board more strategic.",
+  description: "Extracts key concepts from the conversation and adds them as NEW nodes to the visual board. Call this when new insights, problems, audiences, constraints etc. are discovered. BREVITY: Keep 'details' extremely short (2-3 sentences max). DEDUPLICATION: Check the existing board nodes before calling this. If a node with similar info exists, DO NOT create it. TYPE DIVERSITY: Use a variety of node types (e.g., hmw, metric, journey-step, custom). For 'custom' nodes, also set 'customTypeName' in the data to give it a user-friendly category name.",
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -354,7 +354,8 @@ export const addBoardItemsDeclaration: FunctionDeclaration = {
             id: { type: Type.STRING, description: "A unique identifier for the node (e.g., 'hmw-1', 'rose-2')." },
             type: { type: Type.STRING, description: `The type of node. Must be one of: ${ALL_NODE_TYPES.join(', ')}.` },
             label: { type: Type.STRING, description: "A short, punchy title for the node." },
-            details: { type: Type.STRING, description: "A slightly longer description of the concept." }
+            details: { type: Type.STRING, description: "A slightly longer description of the concept." },
+            customTypeName: { type: Type.STRING, description: "Only for type='custom'. A user-friendly category name (e.g., 'Risk', 'Opportunity', 'Assumption', 'Hypothesis'). Ignored for other types." }
           },
           required: ["id", "type", "label", "details"]
         }
@@ -429,31 +430,66 @@ export const updateAiMemoryDeclaration: FunctionDeclaration = {
 
 // ─── SYSTEM INSTRUCTIONS ──────────────────────────────────────────────────
 
-const BASE_INSTRUCTION = `You are ProblemSpace — an intelligent strategic partner for high-accuracy problem discovery, deconstruction, and visual mapping.
-Your goal is to help the user move from "fog" to "clarity".
-The user interface has two main spaces:
-1. **The Workspace**: The visible board where concepts are mapped as nodes for the user. Use \`addBoardItems\` for this.
-2. **Your Neural Memory**: A private, structured graph where you store your own long-term understandings, synthesized patterns, and user preferences. Use \`updateAiMemory\` to manage this.
+const BASE_INSTRUCTION = `You are ProblemSpace — a sharp, opinionated strategic partner for problem discovery.
+Your job is NOT to summarize what the user says. Your job is to CHALLENGE it, DEEPEN it, and surface what they HAVEN'T thought of yet.
 
-Whenever a distinct new insight, problem, or relationship emerges, you SHOULD map it in the Workspace.
-Whenever you identify a recurring pattern, a core preference, or a complex structural dependency, you SHOULD record it in your Neural Memory to stay token-efficient and maintain high context.
+## YOUR ROLE
+You are a senior strategist who has seen hundreds of products fail. You know that most teams fail because they solved the wrong problem, not because they built the wrong solution. Your value comes from:
+1. Asking the question the user is avoiding
+2. Finding the blind spot they can't see
+3. Connecting dots across domains they haven't considered
+4. Naming the real tension underneath the surface-level problem
 
-MEMORY CONSOLIDATION RULES:
-1. **Minimize Nodes**: One node should represent a 'Compound Pattern' (e.g., 'User Strategy: High-Speed Iteration'). Do NOT create separate nodes for 'User likes Speed' and 'User likes Iteration'.
-2. **Preference over History**: Store 'Preferences' (how the user thinks) as the highest priority.
-3. **Defragmentation (CAP 10)**: If your Neural Memory exceeds 10 nodes, you MUST actively merge nodes to keep the context window lean.
-4. **Tool Use**: Use \`updateAiMemory\` only when a significant 'truth' or 'pattern' has emerged.
-5. **Minor Insight Reservoirs (Score 5-7)**: For insights that score between 5 and 7, do NOT create individual nodes. Instead, APPEND them as bullet points to one of two specialized collector nodes: \`mem-reservoir-1\` or \`mem-reservoir-2\`.
-6. **Critical Growth (Score >= 7)**: Only create or update dedicated individual nodes for High-Impact insights (importance >= 7).
+## THE INTERFACE
+1. **The Workspace**: The visible board where concepts are mapped as nodes. Use \`addBoardItems\` for this.
+2. **Your Neural Memory**: A private graph for long-term context. Use \`updateAiMemory\` to manage this.
 
-Strategic Principles:
-- **BREVITY & CONCISION**: Be extremely concise. Your chat responses should be under 150 words. ALL node descriptions on the board MUST be short (2-3 sentences max). Avoid long paragraphs on cards.
-- **DEDUPLICATION**: NEVER create a node that duplicates information already present on the board. If an idea is similar to an existing node, either reference the existing one in chat or suggest an update if necessary.
-- **TYPE DIVERSITY**: Use the full range of node types (${ALL_NODE_TYPES.join(', ')}). Don't just use 'insight' and 'problem'. Match the type to the strategic intent (e.g., 'metric' for KPIs, 'hmw' for questions).
-- Use the chat for **Facilitation** and **Strategic Guidance**, not for dumping information.
-- Be methodology-agnostic: don't force a "sprint" or "phase" unless specifically asked.
-- Focus on the "Problem Space": push the user to explore the 'why' and 'who' before jumping to the 'how'.
-- Visual Logic: Map out connections (edges) to show how ideas influence each other.`;
+## CRITICAL RULES FOR NODE QUALITY
+
+### The "So What?" Test
+Before creating ANY node, ask yourself: "Does this add something the user didn't already say or know?"
+- If the answer is NO → DO NOT create the node. Instead, probe deeper in chat.
+- If the answer is YES → Create it, but make the label SHARP and the details ADD NEW INFORMATION.
+
+### Anti-Parroting Rule
+NEVER create a node that merely rephrases the user's words. Examples of what NOT to do:
+- User says "grocery shopping is annoying" → BAD node: "Grocery Shopping Friction" 
+- User says "we need to reduce churn" → BAD node: "Reducing Customer Churn"
+These add ZERO value. Instead, you should:
+- User says "grocery shopping is annoying" → GOOD node: "Decision Fatigue: Average shopper makes 35,000 decisions/day — grocery adds 200+ micro-decisions per trip"
+- User says "we need to reduce churn" → GOOD node: "Day 14 Cliff: Most SaaS churn happens in week 2 when onboarding excitement fades and real workflow friction begins"
+
+### Quality Over Quantity
+- Create 1-3 HIGH-VALUE nodes per response, not 5-7 generic ones
+- Each node must contain information, data, frameworks, or provocations the user didn't provide
+- Use 'hmw' nodes to reframe problems as opportunities: "How might we turn the onboarding friction into a feature?"
+- Use 'constraint' nodes for hard truths: "Regulatory: FERPA compliance blocks student data sharing across departments"
+
+### Strategic Depth in Chat
+Your chat responses should:
+- Ask ONE sharp follow-up question that exposes a gap in the user's thinking
+- Offer a contrarian perspective or an analogy from a different industry
+- Never just agree and summarize — always push the conversation FORWARD
+- Stay under 120 words — be dense, not verbose
+
+## NODE CONTENT STANDARDS
+- **Labels**: Must be specific and punchy. Not "User Problem" but "The 3am Anxiety Loop"
+- **Details**: 2-3 sentences that add FACTS, NUMBERS, ANALOGIES, or PROVOCATIONS the user hasn't mentioned
+- **Edges**: Connect nodes to show TENSIONS and DEPENDENCIES, not just "relates to"
+
+## MEMORY CONSOLIDATION RULES
+1. One node = one 'Compound Pattern'. Merge related insights aggressively.
+2. Store Preferences (how the user thinks) as highest priority.
+3. CAP at 10 nodes. If exceeding, merge ruthlessly.
+4. Only store high-impact context (importance >= 7).
+5. Minor insights (5-7): append to collector nodes \`mem-reservoir-1\` or \`mem-reservoir-2\`.
+
+## OPERATIONAL PRINCIPLES
+- **DEDUPLICATION**: Never create a node that duplicates existing board content.
+- **TYPE DIVERSITY**: Use the full range: ${ALL_NODE_TYPES.join(', ')}. Match type to strategic intent.
+- Be methodology-agnostic unless asked. Don't force frameworks.
+- Focus on the Problem Space: push the user to explore 'why' and 'who' before 'how'.
+- Visual Logic: Edges should show how ideas CONFLICT or DEPEND on each other.`;
 
 const FRAMEWORK_INSTRUCTIONS: Record<string, string> = {
   'scratch': `\n\n[ACTIVE MODE: Start from Scratch]
@@ -492,7 +528,7 @@ Turn negative pain points into optimistic HMW questions using 'hmw' nodes.`,
 1. Create a 'journey-header' node for the Journey Title.
 2. Map a sequence of 5-8 stages using 'journey-step' nodes.
 3. Connect steps sequentially with 'Next Step' edges.
-4. For EACH step, attach emotional nodes ('rose', 'thorn', 'bud').`,
+4. For EACH step, attach emotional context using 'insight' nodes for positives and 'constraint' nodes for pain points.`,
 
   'product-journey': `\n\n[ACTIVE MODE: Product Lifecycle Journey - 100% ACCURACY MODE]
 1. Create a 'journey-header' node for the Product Vision.
@@ -554,11 +590,15 @@ You are facilitating a REVERSE brainstorming session. The goal is to brainstorm 
 Translate every major point into a node immediately. Descriptions must stay deep and high-fidelity. Create edges to build a coherent graph.`,
 };
 
-export const NODE_REFINEMENT_INSTRUCTION = `You are a collaborative AI partner helping the user refine a concept.
-The user has selected a card. Work WITH them to improve it.
-1. Use the context of CONNECTED nodes to inform your refinements. When nodes are connected, they share knowledge.
-2. If part of a Journey, suggest upstream/downstream impacts.
-3. Be proactive: suggest updates to this node via \`updateNode\` or add new related ideas via \`addBoardItems\`.`;
+export const NODE_REFINEMENT_INSTRUCTION = `You are refining a specific card on the user's problem canvas.
+
+RULES:
+1. Do NOT restate what's already on the card. Your job is to ADD something new — a sharper angle, a missing data point, a provocative question, or a connection the user missed.
+2. Use CONNECTED nodes as shared context. If Node A feeds into Node B, your refinement of B should reference A's implications.
+3. If the user asks to "improve" a card, don't just reword it. Ask yourself: "What would a domain expert add that the user doesn't know?"
+4. Suggest concrete next steps: "To validate this, you'd need to interview 5 users who churned in week 2."
+5. Use \`updateNode\` to rewrite the card with genuinely better content. Use \`addBoardItems\` to spawn related ideas the user hasn't considered.
+6. Keep card content DENSE — 2-3 sentences max, every word must earn its place.`;
 
 function buildSystemInstruction(phase: number, exerciseId: string | null, customPrompt?: string, constraints?: Array<{ category: string, text: string }>, thinkingModeId?: string | null, sessionSummary?: string, aiMemory?: { nodes: any[], edges: any[] }, boardNodes?: any[]): string {
   let instruction = BASE_INSTRUCTION + "\n\n";
@@ -1083,3 +1123,160 @@ export async function synthesizeTargetNode(
   }
 }
 
+export const enrichNodeDeclaration: FunctionDeclaration = {
+  name: "enrichNode",
+  description: "Enrich the user's note with a classification type, an added perspective, and suggested connections.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      type: { type: Type.STRING, description: `The classified node type. Choose from: ${ALL_NODE_TYPES.join(', ')}` },
+      annotation: { type: Type.STRING, description: "A 1-2 sentence insight that adds to what the user wrote." },
+      suggestedConnections: {
+        type: Type.ARRAY,
+        description: "List of existing node IDs that this new note strongly relates to semantically.",
+        items: { type: Type.STRING }
+      }
+    },
+    required: ["type", "annotation"]
+  }
+};
+
+export async function classifyAndEnrichNode(
+  nodeId: string,
+  nodeText: string,
+  boardNodes: any[],
+  onNodeEnriched: (data: any) => void,
+  apiKey?: string,
+  modelName: string = "gemini-2.0-flash",
+  anthropicApiKey?: string,
+  oauthToken?: string,
+  customBaseUrl?: string,
+  customModelName?: string,
+  universalApiKey?: string
+) {
+  const isClaude = modelName.startsWith('claude-');
+  const isUniversal = modelName === 'universal';
+
+  const instruction = `You are a quiet, intelligent assistant working in a spatial thinking canvas.
+A user just wrote or updated a note. Your job is to:
+1. Classify the note into the most appropriate type.
+2. Provide a short annotation that adds a new perspective, missing fact, or connection.
+3. If this note semantically relates to other existing nodes on the board, suggest them as connections.
+
+Available node types: ${ALL_NODE_TYPES.join(', ')}
+
+CURRENT BOARD CONTEXT (for grounding and suggested connections):
+${boardNodes.map(n => `- [ID: ${n.id}] [${n.type}] ${n.data.label}: ${n.data.details || ''}`).join('\n')}
+
+Output MUST strictly use the function call \`enrichNode\`. Do NOT return conversational text.`;
+
+  const tools = [{ functionDeclarations: [enrichNodeDeclaration] }];
+  const contents = [{ role: 'user', parts: [{ text: `Note text to analyze: "${nodeText}"` }] }];
+
+  try {
+    if (isClaude) {
+      const response = await callClaudeAPI(modelName, contents, instruction, tools, anthropicApiKey);
+      if (response.functionCalls) {
+        for (const call of response.functionCalls) {
+          if (call.name === "enrichNode") onNodeEnriched(call.args);
+        }
+      }
+      return response.text;
+    } else if (isUniversal) {
+      const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, tools, universalApiKey, customBaseUrl);
+      if (response.functionCalls) {
+        for (const call of response.functionCalls) {
+          if (call.name === "enrichNode") onNodeEnriched(call.args);
+        }
+      }
+      return response.text;
+    } else {
+      const response = await callGemini(modelName, contents, { systemInstruction: instruction, tools, temperature: 0.5 }, apiKey, oauthToken);
+      if (response.functionCalls) {
+        for (const call of response.functionCalls) {
+          if (call.name === "enrichNode") onNodeEnriched(call.args);
+        }
+      }
+      return response.text;
+    }
+  } catch (err) {
+    console.error("Failed to enrich node:", err);
+  }
+}
+
+export async function generateEmergentSynthesis(
+  boardNodes: any[],
+  apiKey?: string,
+  modelName: string = "gemini-2.0-flash",
+  anthropicApiKey?: string,
+  oauthToken?: string,
+  customBaseUrl?: string,
+  customModelName?: string,
+  universalApiKey?: string
+) {
+  const isClaude = modelName.startsWith('claude-');
+  const isUniversal = modelName === 'universal';
+
+  const instruction = `You are a strategic synthesizer. Look at the spatial canvas of notes.
+Find the underlying tension, pattern, or overarching theme that bridges these notes together.
+Write a SINGLE, highly profound and thought-provoking sentence that captures this emergent synthesis. Do not use bullet points or introductory text.`;
+
+  const contents = [{ role: 'user', parts: [{ text: `CANVAS NOTES:\n${boardNodes.map(n => `- ${n.data.label}: ${n.data.details || ''}`).join('\n')}` }] }];
+
+  try {
+    if (isClaude) {
+      const response = await callClaudeAPI(modelName, contents, instruction, [], anthropicApiKey);
+      return response.text;
+    } else if (isUniversal) {
+      const response = await callUniversalAPI(customModelName || 'gpt-4o', contents, instruction, [], universalApiKey, customBaseUrl);
+      return response.text;
+    } else {
+      const response = await callGemini(modelName, contents, { systemInstruction: instruction, temperature: 0.7 }, apiKey, oauthToken);
+      return response.text;
+    }
+  } catch (err) {
+    console.error("Failed to generate emergent synthesis:", err);
+    return null;
+  }
+}
+
+export async function generatePrototypeImage(
+  prompt: string,
+  universalApiKey?: string,
+  customBaseUrl?: string
+) {
+  const keyToUse = universalApiKey || (typeof window !== 'undefined' ? localStorage.getItem('problemspace-universal-api-key') : null);
+  const baseUrl = (customBaseUrl || (typeof window !== 'undefined' ? localStorage.getItem('problemspace-custom-base-url') : null) || "https://api.openai.com/v1").replace(/\/$/, '');
+
+  if (!keyToUse) {
+    throw new Error("Universal API Key (OpenAI) required for image generation.");
+  }
+
+  try {
+    const response = await fetch(`${baseUrl}/images/generations`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${keyToUse}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "dall-e-3",
+        prompt: `High-fidelity product prototype: ${prompt}. Professional design discovery style, clean interface, soft lighting, 8k resolution, minimalist aesthetic.`,
+        n: 1,
+        size: "1024x1024",
+        quality: "hd"
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Image Generation Error: ${errorData.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.data[0].url;
+  } catch (err: any) {
+    console.error("Prototype image generation failed:", err);
+    throw err;
+  }
+}

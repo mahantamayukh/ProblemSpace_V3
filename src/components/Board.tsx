@@ -249,7 +249,9 @@ function BoardInner({
       if (clearUpdatedEdge) {
         setTimeout(clearUpdatedEdge, 0);
       }
+      setTimeout(takeSnapshot, 50);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updatedEdge, setEdges, isDarkMode, clearUpdatedEdge]);
 
   // Context Menu Global Listeners
@@ -304,9 +306,13 @@ function BoardInner({
       .filter((n: any) => !existingIds.has(n.id))
       .map((n: any) => ({
         id: n.id,
-        type: n.type,
+        type: ALL_NODE_TYPES.includes(n.type) ? n.type : 'custom',
         position: { x: 0, y: 0 },
-        data: { label: n.label, details: n.details }
+        data: { 
+          label: n.label, 
+          details: n.details, 
+          customTypeName: ALL_NODE_TYPES.includes(n.type) ? n.customTypeName : (n.type.charAt(0).toUpperCase() + n.type.slice(1)) 
+        }
       }));
 
     if (addedNodes.length === 0 && (!newItems.edges || newItems.edges.length === 0)) return;
@@ -322,8 +328,12 @@ function BoardInner({
         type: 'default',
         animated: true,
         interactionWidth: 40,
-        data: { customColor: null, thickness: 3, dashed: false },
-        style: { stroke: isDarkMode ? '#94a3b8' : '#cbd5e1', strokeWidth: 3, strokeDasharray: 'none' }
+        data: { customColor: e.data?.customColor || null, thickness: e.data?.thickness || 3, dashed: e.data?.dashed || false },
+        style: { 
+          stroke: e.data?.customColor || (isDarkMode ? '#94a3b8' : '#cbd5e1'), 
+          strokeWidth: e.data?.thickness || 3, 
+          strokeDasharray: e.data?.dashed ? '5,5' : 'none' 
+        }
       }));
 
     const finalNodes = [...currentNodes, ...addedNodes];

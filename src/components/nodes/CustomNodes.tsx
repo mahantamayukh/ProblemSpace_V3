@@ -45,16 +45,8 @@ const nodeStyles = {
   constraint: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-900', icon: AlertTriangle, iconColor: 'text-amber-600', darkBg: 'dark:bg-amber-950/40', darkText: 'dark:text-amber-300', darkIcon: 'dark:text-amber-400' },
   sticky: { bg: 'bg-yellow-100', border: 'border-yellow-300', text: 'text-yellow-900', icon: StickyNote, iconColor: 'text-yellow-600', darkBg: 'dark:bg-yellow-950/40', darkText: 'dark:text-yellow-200', darkIcon: 'dark:text-yellow-400' },
   hmw: { bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-900', icon: HelpCircle, iconColor: 'text-cyan-600', darkBg: 'dark:bg-cyan-950/40', darkText: 'dark:text-cyan-300', darkIcon: 'dark:text-cyan-400' },
-  rose: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-900', icon: Flower2, iconColor: 'text-rose-500', darkBg: 'dark:bg-rose-950/40', darkText: 'dark:text-rose-300', darkIcon: 'dark:text-rose-400' },
-  thorn: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-900', icon: AlertOctagon, iconColor: 'text-red-600', darkBg: 'dark:bg-red-950/40', darkText: 'dark:text-red-300', darkIcon: 'dark:text-red-400' },
-  bud: { bg: 'bg-lime-50', border: 'border-lime-200', text: 'text-lime-900', icon: Sprout, iconColor: 'text-lime-600', darkBg: 'dark:bg-lime-950/40', darkText: 'dark:text-lime-300', darkIcon: 'dark:text-lime-400' },
-  competitor: { bg: 'bg-slate-50', border: 'border-slate-300', text: 'text-slate-900', icon: Swords, iconColor: 'text-slate-600', darkBg: 'dark:bg-slate-950/40', darkText: 'dark:text-slate-300', darkIcon: 'dark:text-slate-400' },
-  'journey-step': { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-900', icon: Footprints, iconColor: 'text-indigo-600', darkBg: 'dark:bg-indigo-950/40', darkText: 'dark:text-indigo-300', darkIcon: 'dark:text-indigo-400' },
-  principle: { bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-900', icon: Compass, iconColor: 'text-teal-600', darkBg: 'dark:bg-teal-950/40', darkText: 'dark:text-teal-300', darkIcon: 'dark:text-teal-400' },
-  metric: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-900', icon: BarChart3, iconColor: 'text-orange-600', darkBg: 'dark:bg-orange-950/40', darkText: 'dark:text-orange-300', darkIcon: 'dark:text-orange-400' },
-  tweet: { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-900', icon: MessageCircle, iconColor: 'text-sky-600', darkBg: 'dark:bg-sky-950/40', darkText: 'dark:text-sky-300', darkIcon: 'dark:text-sky-400' },
-  failure: { bg: 'bg-red-100', border: 'border-red-400', text: 'text-red-900', icon: AlertOctagon, iconColor: 'text-red-600', darkBg: 'dark:bg-red-950/40', darkText: 'dark:text-red-300', darkIcon: 'dark:text-red-400' },
   signal: { bg: 'bg-violet-100', border: 'border-violet-300', text: 'text-violet-900', icon: Sparkles, iconColor: 'text-violet-600', darkBg: 'dark:bg-violet-950/40', darkText: 'dark:text-violet-300', darkIcon: 'dark:text-violet-400' },
+  custom: { bg: 'bg-gray-50', border: 'border-gray-300', text: 'text-gray-900', icon: StickyNote, iconColor: 'text-gray-600', darkBg: 'dark:bg-gray-950/40', darkText: 'dark:text-gray-300', darkIcon: 'dark:text-gray-400' },
   memory: { bg: 'bg-fuchsia-500/10', border: 'border-fuchsia-500', text: 'text-fuchsia-100', icon: NeuronIcon, iconColor: 'text-fuchsia-400', darkBg: 'dark:bg-fuchsia-950/40', darkText: 'dark:text-fuchsia-300', darkIcon: 'dark:text-fuchsia-400' },
 };
 
@@ -63,26 +55,17 @@ const typeLabels: Record<string, string> = {
   insight: 'Insight',
   audience: 'Audience',
   constraint: 'Constraint',
-  sticky: 'Sticky Note',
   hmw: 'How Might We',
-  rose: 'Rose',
-  thorn: 'Thorn',
-  bud: 'Bud',
-  competitor: 'Competitor',
-  'journey-step': 'Journey Step',
-  principle: 'Principle',
-  metric: 'Metric',
-  tweet: 'First Tweet',
-  'journey-header': 'Project/Journey Header',
-  failure: 'Failure Mode',
   signal: 'Market Signal',
+  sticky: 'Sticky Note',
+  custom: 'Custom',
 };
 
 export function DetectiveNode({ id, data, type, selected }: any) {
   const style = nodeStyles[type as keyof typeof nodeStyles] || nodeStyles.insight;
   const Icon = style.icon;
   const customColor = data.customColor;
-  const label = typeLabels[type] || type;
+  const label = type === 'custom' ? (data.customTypeName || 'Custom') : (typeLabels[type] || type);
 
   const SWATCHES = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#64748b'];
 
@@ -244,14 +227,9 @@ export const nodeTypes = {
   constraint: (props: any) => <DetectiveNode {...props} type="constraint" />,
   sticky: (props: any) => <DetectiveNode {...props} type="sticky" />,
   hmw: (props: any) => <DetectiveNode {...props} type="hmw" />,
-  rose: (props: any) => <DetectiveNode {...props} type="rose" />,
-  thorn: (props: any) => <DetectiveNode {...props} type="thorn" />,
-  bud: (props: any) => <DetectiveNode {...props} type="bud" />,
-  competitor: (props: any) => <DetectiveNode {...props} type="competitor" />,
-  'journey-step': (props: any) => <DetectiveNode {...props} type="journey-step" />,
-  principle: (props: any) => <DetectiveNode {...props} type="principle" />,
-  metric: (props: any) => <DetectiveNode {...props} type="metric" />,
-  tweet: (props: any) => <DetectiveNode {...props} type="tweet" />,
+  signal: (props: any) => <DetectiveNode {...props} type="signal" />,
+  custom: (props: any) => <DetectiveNode {...props} type="custom" />,
+
   'empathy-map-framework': (props: any) => <EmpathyMapNode {...props} />,
   'empathy-says': (props: any) => <EmpathyNoteNode {...props} type="empathy-says" />,
   'empathy-thinks': (props: any) => <EmpathyNoteNode {...props} type="empathy-thinks" />,
