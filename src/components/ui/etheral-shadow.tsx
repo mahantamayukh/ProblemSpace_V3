@@ -66,14 +66,8 @@ export function EtheralShadow({
 }: ShadowOverlayProps) {
     const id = useInstanceId();
     const animationEnabled = animation && animation.scale > 0;
-    const feColorMatrixRef = useRef<SVGFEColorMatrixElement>(null);
-    const hueRotateMotionValue = useMotionValue(180);
-    const hueRotateAnimation = useRef<AnimationPlaybackControls | null>(null);
-
     const displacementScale = animation ? mapRange(animation.scale, 1, 100, 20, 100) : 0;
     const animationDuration = animation ? mapRange(animation.speed, 1, 100, 1000, 50) : 1;
-
-
 
     return (
         <div
@@ -94,21 +88,31 @@ export function EtheralShadow({
                 }}
             >
                 {animationEnabled && (
-                    <svg style={{ position: "absolute" }}>
+                    <svg style={{ position: "absolute", width: 0, height: 0 }}>
                         <defs>
                             <filter id={id}>
                                 <feTurbulence
                                     result="undulation"
-                                    numOctaves="2"
-                                    baseFrequency={`${mapRange(animation.scale, 0, 100, 0.001, 0.0005)},${mapRange(animation.scale, 0, 100, 0.004, 0.002)}`}
-                                    seed="0"
+                                    numOctaves="1"
+                                    baseFrequency={`${mapRange(animation.scale, 0, 100, 0.001, 0.0005)} ${mapRange(animation.scale, 0, 100, 0.004, 0.002)}`}
+                                    seed="1"
                                     type="turbulence"
-                                />
+                                >
+                                    <animate
+                                        attributeName="baseFrequency"
+                                        values={`
+                                            ${mapRange(animation.scale, 0, 100, 0.001, 0.0005)} ${mapRange(animation.scale, 0, 100, 0.004, 0.002)};
+                                            ${mapRange(animation.scale, 0, 100, 0.0011, 0.0006)} ${mapRange(animation.scale, 0, 100, 0.0042, 0.0022)};
+                                            ${mapRange(animation.scale, 0, 100, 0.001, 0.0005)} ${mapRange(animation.scale, 0, 100, 0.004, 0.002)}
+                                        `}
+                                        dur={`${animationDuration / 5}s`}
+                                        repeatCount="indefinite"
+                                    />
+                                </feTurbulence>
                                 <feColorMatrix
-                                    ref={feColorMatrixRef}
                                     in="undulation"
                                     type="hueRotate"
-                                    values="180"
+                                    values="0"
                                 />
                                 <feColorMatrix
                                     in="dist"

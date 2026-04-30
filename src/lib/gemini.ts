@@ -29,7 +29,7 @@ async function callGemini(
 ) {
   const client = getAI(apiKey);
   const normalizedModel = model.startsWith('models/') ? model : `models/${model}`;
-  
+
   const response = await client.models.generateContent({
     model: normalizedModel,
     contents,
@@ -196,7 +196,7 @@ async function callUniversalAPI(
   let universalMessages = messages.map(msg => {
     const role = msg.role === 'model' ? 'assistant' : 'user';
     const textPart = typeof msg.parts?.[0]?.text === 'string' ? msg.parts[0].text : (msg.text || "");
-    
+
     // OpenAI-compatible APIs (like Mistral/Groq) reject assistant messages with empty content.
     // We provide a subtle fallback if the message was purely a tool call with no text.
     return {
@@ -296,8 +296,8 @@ export async function testAIConnection(config: {
   try {
     if (isClaude) {
       await callClaudeAPI(
-        config.model, 
-        [{ role: 'user', parts: [{ text: 'ping' }] }], 
+        config.model,
+        [{ role: 'user', parts: [{ text: 'ping' }] }],
         'Respond only with "pong".',
         [],
         config.anthropicKey
@@ -322,8 +322,8 @@ export async function testAIConnection(config: {
     return { success: true };
   } catch (err: any) {
     console.error("Diagnostic Connection Test Failed:", err);
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: err.message || "Unknown Connection Error"
     };
   }
@@ -615,10 +615,10 @@ function buildSystemInstruction(phase: number, exerciseId: string | null, custom
   if (aiMemory && aiMemory.nodes.length > 0) {
     const memoryLimit = 10;
     const activeMemory = aiMemory.nodes.slice(-memoryLimit);
-    
+
     instruction += `### YOUR NEURAL MEMORY (Active Context Hub)\n`;
     instruction += `(Note: You only have access to the ${activeMemory.length} most relevant/recent nodes for token efficiency. If a key memory is missing, ask the user to 'pin' it or update the Memory Board.)\n`;
-    
+
     activeMemory.forEach(n => {
       instruction += `- [MEMORY:${n.id}] ${n.data.label}: ${n.data.details}\n`;
     });
